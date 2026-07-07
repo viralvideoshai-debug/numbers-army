@@ -1,0 +1,14 @@
+# Dependencies / build tooling (not needed to run the game)
+node_modules/
+android/
+.gradle/
+*.keystore
+*.jks
+
+# OS / editor junk
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Local scratch
+*.log

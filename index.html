@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Numbers Army — multiply your stickman army through math gates, gamble at wager gates, and storm the castle! Free 3D crowd-runner.">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b82f6">
+<title>Numbers Army</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#a5ddf2; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; touch-action:none; user-select:none; -webkit-user-select:none; }
+  #c { position:fixed; inset:0; display:block; }
+
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; }
+  .hidden { display:none !important; }
+
+  /* ---------- Menu ---------- */
+  #menu { background:linear-gradient(180deg,rgba(158,217,240,.90),rgba(96,165,250,.94)); }
+  .title { font-size:clamp(38px,9vw,72px); font-weight:900; color:#fff; letter-spacing:2px;
+    text-shadow:0 4px 0 #1d4ed8, 0 8px 24px rgba(0,0,0,.35); margin-bottom:2px; text-align:center; }
+  .title .n1 { color:#fff; } .title .n2 { color:#fde047; }
+  .subtitle { color:#1e3a5f; font-size:14px; font-weight:600; margin-bottom:18px; }
+  .btn { border:none; border-radius:16px; cursor:pointer; font-weight:800; color:#fff;
+    padding:14px 34px; font-size:20px; margin:6px; box-shadow:0 5px 0 rgba(0,0,0,.3);
+    transition:transform .08s, box-shadow .08s; }
+  .btn:active { transform:translateY(4px); box-shadow:0 1px 0 rgba(0,0,0,.3); }
+  .btn-play { background:linear-gradient(180deg,#4ade80,#16a34a); font-size:26px; padding:18px 60px; }
+  .btn-sec { background:linear-gradient(180deg,#818cf8,#4f46e5); font-size:16px; padding:10px 24px; }
+  .btn-gold { background:linear-gradient(180deg,#fbbf24,#d97706); }
+  .btn-ad { background:linear-gradient(180deg,#38bdf8,#0369a1); }
+  .btn-ghost2 { background:rgba(0,0,0,.28); box-shadow:none; font-size:15px; }
+  .menurow { display:flex; flex-wrap:wrap; justify-content:center; }
+  .ghostline { margin-top:14px; color:#7c4a03; background:rgba(255,255,255,.6); border-radius:12px; padding:8px 18px; font-size:14px; font-weight:600; }
+  .chline { margin-top:8px; color:#14532d; background:rgba(255,255,255,.6); border-radius:12px; padding:8px 18px; font-size:13px; font-weight:600; }
+
+  /* ---------- Panels (shop / upgrades) ---------- */
+  .panel { background:#241155; border:3px solid #7c3aed; border-radius:22px; padding:20px 22px;
+    width:min(92vw,440px); max-height:82vh; overflow-y:auto; color:#fff; }
+  .panel h2 { text-align:center; margin-bottom:12px; color:#fbbf24; }
+  .uprow { display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.07);
+    border-radius:14px; padding:10px 14px; margin:8px 0; }
+  .uprow .nm { font-weight:700; font-size:15px; } .uprow .ds { font-size:12px; color:#c4b5fd; }
+  .btn-up { background:linear-gradient(180deg,#fbbf24,#d97706); border:none; border-radius:10px;
+    color:#3b2503; font-weight:800; padding:8px 14px; font-size:14px; cursor:pointer; min-width:88px; }
+  .btn-up:disabled { filter:grayscale(1); opacity:.55; }
+  .skinrow { display:flex; gap:10px; justify-content:center; margin:10px 0; }
+  .skin { width:52px; height:52px; border-radius:14px; border:3px solid rgba(255,255,255,.25); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; text-shadow:0 1px 2px #000; }
+  .skin.sel { border-color:#fbbf24; box-shadow:0 0 12px #fbbf24; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  .pill { position:absolute; background:rgba(255,255,255,.88); border:2px solid rgba(0,0,0,.08);
+    border-radius:999px; color:#1e293b; font-weight:800; padding:6px 16px; font-size:17px;
+    box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  #hudCoins { top:calc(10px + env(safe-area-inset-top)); right:12px; color:#b45309; }
+  #hudLevel { display:none; }
+  #hudStreak { top:calc(56px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); color:#ea580c; transition:transform .15s; }
+  #hudStreak.pop { transform:translateX(-50%) scale(1.45); }
+  #muteBtn { position:absolute; top:calc(56px + env(safe-area-inset-top)); right:12px; pointer-events:auto;
+    background:rgba(255,255,255,.88); border:2px solid rgba(0,0,0,.08); border-radius:999px;
+    width:40px; height:40px; font-size:18px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  #armyLabel { position:fixed; transform:translate(-50%,-100%); color:#fff; font-weight:900; font-size:26px;
+    text-shadow:0 2px 0 #1d4ed8, 0 4px 10px rgba(0,0,0,.45); z-index:9; pointer-events:none; }
+  #bossbarWrap { position:absolute; top:calc(96px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+    width:min(70vw,340px); background:rgba(0,0,0,.5); border:2px solid #f87171; border-radius:10px; padding:3px; }
+  #bossbar { height:14px; border-radius:6px; background:linear-gradient(180deg,#f87171,#b91c1c); width:100%; transition:width .1s linear; }
+  #bossName { text-align:center; color:#fecaca; font-size:12px; font-weight:700; margin-bottom:2px; }
+
+  /* ---------- Tutorial / toast ---------- */
+  #tut { position:fixed; bottom:18vh; left:50%; transform:translateX(-50%); z-index:15; pointer-events:none;
+    background:rgba(20,10,60,.9); border:2px solid #fbbf24; color:#fff; font-weight:700; font-size:clamp(15px,4vw,20px);
+    padding:12px 22px; border-radius:16px; text-align:center; max-width:86vw; }
+  #toasts { position:fixed; top:30%; left:50%; transform:translateX(-50%); z-index:40; pointer-events:none; text-align:center; }
+  .toast { background:rgba(20,10,60,.92); border:2px solid #4ade80; color:#fff; font-weight:700;
+    padding:10px 20px; border-radius:14px; margin:6px auto; animation:toastIn .3s, toastOut .4s 2.2s forwards; }
+  @keyframes toastIn { from { opacity:0; transform:scale(.7);} }
+  @keyframes toastOut { to { opacity:0; transform:translateY(-20px);} }
+
+  /* ---------- Coin flip ---------- */
+  #flipOverlay { background:rgba(10,5,30,.55); z-index:30; perspective:900px; }
+  #coin { width:min(38vw,170px); height:min(38vw,170px); position:relative; transform-style:preserve-3d; }
+  .face { position:absolute; inset:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:min(20vw,90px); font-weight:900; backface-visibility:hidden; border:6px solid #92610a; }
+  .face.h { background:radial-gradient(circle at 35% 30%,#fde68a,#f59e0b); color:#92610a; }
+  .face.t { background:radial-gradient(circle at 35% 30%,#e5e7eb,#6b7280); color:#374151; transform:rotateY(180deg); }
+  #flipText { color:#fff; font-size:clamp(22px,6vw,40px); font-weight:900; margin-top:24px; text-shadow:0 3px 10px #000; }
+
+  /* ---------- Results / modals ---------- */
+  .modal { background:rgba(10,5,30,.78); z-index:35; }
+  .card { background:linear-gradient(180deg,#2a1465,#1c0d45); border:3px solid #7c3aed; border-radius:24px;
+    padding:24px 26px; width:min(92vw,420px); color:#fff; text-align:center; }
+  .card h1 { font-size:32px; margin-bottom:8px; }
+  .card h1.win { color:#4ade80; } .card h1.lose { color:#f87171; }
+  .stat { display:flex; justify-content:space-between; font-size:15px; padding:5px 4px; border-bottom:1px dashed rgba(255,255,255,.12); }
+  .stat b { color:#fde047; }
+  .bigscore { font-size:30px; font-weight:900; color:#fbbf24; margin:10px 0 2px; }
+  .ghostcmp { font-size:13px; color:#c4b5fd; margin:8px 0; }
+  .adbox { border:2px dashed #38bdf8; border-radius:14px; padding:10px; margin:10px 0; font-size:13px; color:#7dd3fc; }
+
+  #rotateHint { position:fixed; bottom:8px; left:50%; transform:translateX(-50%); color:rgba(30,41,59,.45); font-size:11px; z-index:5; pointer-events:none; }
+
+  /* ---------- Progress bar ---------- */
+  #progWrap { position:absolute; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+    width:min(56vw,320px); display:flex; align-items:center; gap:8px;
+    background:rgba(255,255,255,.88); border-radius:999px; padding:5px 12px;
+    color:#1e293b; font-weight:900; font-size:15px; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  #progLvl { background:#3b82f6; color:#fff; border-radius:999px; min-width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center; font-size:14px; }
+  #progTrack { flex:1; height:8px; background:rgba(0,0,0,.14); border-radius:99px; overflow:hidden; }
+  #progFill { height:100%; width:0%; background:linear-gradient(90deg,#4ade80,#22c55e); border-radius:99px; }
+
+  /* ---------- Pre-run cards ---------- */
+  .pressbox { background:rgba(255,255,255,.92); color:#1e293b; font-weight:800; font-size:clamp(13px,3.5vw,17px);
+    border-radius:14px; padding:10px 22px; margin-bottom:16px; box-shadow:0 3px 10px rgba(0,0,0,.2); }
+  .kbd { border:2px solid #94a3b8; border-bottom-width:4px; border-radius:6px; padding:1px 8px; font-size:.85em; }
+  .precard { width:min(38vw,170px); background:linear-gradient(180deg,#60a5fa,#2563eb); border:3px solid #1e40af;
+    border-radius:16px; padding:10px 12px; color:#fff; cursor:pointer; text-align:center;
+    box-shadow:0 5px 0 rgba(0,0,0,.25); transition:transform .08s; }
+  .precard:active { transform:translateY(3px); }
+  .precard.off { filter:grayscale(.8); opacity:.7; }
+  .pcnm { font-weight:800; font-size:14px; }
+  .pclvl { font-size:10px; background:rgba(0,0,0,.25); border-radius:6px; padding:1px 5px; }
+  .pcds { font-size:11px; color:#dbeafe; margin:4px 0; }
+  .pccost { font-weight:900; font-size:16px; color:#fde047; }
+
+  /* ---------- Announcer / frenzy / buffs ---------- */
+  #announce { position:fixed; top:26%; left:50%; transform:translate(-50%,-50%) scale(.3); z-index:16;
+    font-weight:900; font-size:clamp(26px,7vw,46px); color:#fde047; text-align:center; opacity:0;
+    text-shadow:0 3px 0 rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.35); pointer-events:none; white-space:nowrap; }
+  #announce.go { animation:annPop 1s cubic-bezier(.2,.9,.3,1) forwards; }
+  @keyframes annPop {
+    0% { opacity:0; transform:translate(-50%,-50%) scale(.3); }
+    18% { opacity:1; transform:translate(-50%,-50%) scale(1.15); }
+    30% { transform:translate(-50%,-50%) scale(1); }
+    80% { opacity:1; }
+    100% { opacity:0; transform:translate(-50%,-58%) scale(1); }
+  }
+  #buffs { position:absolute; top:calc(56px + env(safe-area-inset-top)); left:12px;
+    font-size:20px; font-weight:800; color:#0c4a6e; text-shadow:0 1px 2px #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="pill" id="hudLevel">LEVEL 1</div>
+  <div id="progWrap"><span id="progLvl">1</span><div id="progTrack"><div id="progFill"></div></div><span>🏁</span></div>
+  <div class="pill" id="hudCoins">🪙 0</div>
+  <div class="pill" id="hudStreak">STREAK x1</div>
+  <div id="buffs"></div>
+  <button id="muteBtn">🔊</button>
+  <div id="bossbarWrap" class="hidden"><div id="bossName">👑 KING MOB</div><div id="bossbar"></div></div>
+</div>
+<div id="armyLabel" class="hidden">10</div>
+<div id="tut" class="hidden"></div>
+<div id="toasts"></div>
+<div id="announce"></div>
+
+<!-- MENU -->
+<div id="menu" class="screen">
+  <div class="title"><span class="n1">NUMBERS</span> <span class="n2">ARMY</span></div>
+  <div class="subtitle">Multiply. Wager. Conquer the castle.</div>
+  <button class="btn btn-play" id="btnPlay" data-primary>▶ PLAY&nbsp; <span id="btnPlayLvl"></span></button>
+  <div class="menurow">
+    <button class="btn btn-sec" id="btnShop">⬆ UPGRADES</button>
+    <button class="btn btn-sec" id="btnBuild">🏰 BUILD</button>
+    <button class="btn btn-sec btn-gold" id="btnBooster">🍀 LUCK BOOST (AD)</button>
+  </div>
+  <div class="menurow">
+    <button class="btn btn-ghost2" id="btnMuteMenu">🔊 Sound</button>
+    <button class="btn btn-ghost2" id="btnResetSave">↺ Reset save</button>
+  </div>
+  <div class="ghostline" id="ghostLine"></div>
+  <div class="chline" id="chLine"></div>
+</div>
+
+<!-- SHOP -->
+<div id="shop" class="screen modal hidden">
+  <div class="panel">
+    <h2>UPGRADES &nbsp;<span style="font-size:15px;color:#fde047" id="shopCoins">🪙 0</span></h2>
+    <div class="uprow"><div><div class="nm">👥 Starting Army</div><div class="ds" id="dsArmy"></div></div><button class="btn-up" id="upArmy"></button></div>
+    <div class="uprow"><div><div class="nm">🍀 Gate Luck</div><div class="ds" id="dsLuck"></div></div><button class="btn-up" id="upLuck"></button></div>
+    <div class="uprow"><div><div class="nm">🎲 Wager Odds</div><div class="ds" id="dsOdds"></div></div><button class="btn-up" id="upOdds"></button></div>
+    <h2 style="margin-top:14px">ARMY SKINS</h2>
+    <div class="skinrow" id="skinRow"></div>
+    <h2 style="margin-top:14px">STORE</h2>
+    <div class="uprow"><div><div class="nm">🎁 Starter Bundle</div><div class="ds">1000 coins + 1 free army upgrade</div></div><button class="btn-up" id="iapBundle">$1.99</button></div>
+    <div class="uprow"><div><div class="nm">🚫 Remove Interstitials</div><div class="ds">One-time. Rewarded ads stay optional.</div></div><button class="btn-up" id="iapNoAds">$2.99</button></div>
+    <div style="text-align:center;margin-top:12px"><button class="btn btn-sec" id="btnCloseShop" data-primary>DONE</button></div>
+  </div>
+</div>
+
+<!-- CASTLE BUILDER -->
+<div id="buildScreen" class="screen modal hidden">
+  <div class="panel">
+    <h2>MY CASTLE 🏰 &nbsp;<span id="buildCoins" style="font-size:15px;color:#fde047"></span></h2>
+    <div id="buildArt" style="text-align:center;font-size:44px;margin:6px 0"></div>
+    <div id="buildList"></div>
+    <div style="text-align:center;margin-top:12px"><button class="btn btn-sec" id="btnCloseBuild" data-primary>DONE</button></div>
+  </div>
+</div>
+
+<!-- PRE-RUN: tap to start + quick upgrades -->
+<div id="ready" class="screen hidden" style="background:transparent; justify-content:flex-end; padding-bottom:6vh; z-index:18">
+  <div class="pressbox">PRESS <span class="kbd">SPACE</span> OR TAP TO START</div>
+  <div style="display:flex; gap:12px">
+    <div class="precard" id="cardArmy"></div>
+    <div class="precard" id="cardLuck"></div>
+  </div>
+  <button id="btnGo" data-primary style="display:none"></button>
+</div>
+
+<!-- COIN FLIP -->
+<div id="flipOverlay" class="screen hidden">
+  <div id="coin"><div class="face h">2×</div><div class="face t">0</div></div>
+  <div id="flipText">DOUBLE OR NOTHING…</div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen modal hidden">
+  <div class="card">
+    <h1 id="resTitle" class="win">CASTLE CLAIMED! 🏰</h1>
+    <div class="stat"><span>Peak army</span><b id="rPeak">0</b></div>
+    <div class="stat"><span>Gates cleared</span><b id="rGates">0</b></div>
+    <div class="stat"><span>Boss bonus</span><b id="rBoss">×1</b></div>
+    <div class="stat"><span>Streak multiplier</span><b id="rStreak">×1</b></div>
+    <div class="stat"><span>Track coins picked</span><b id="rPicked">0</b></div>
+    <div class="stat" id="rowStairs"><span>Stairs bonus</span><b id="rStairs">×1</b></div>
+    <div class="bigscore" id="rScore">0</div>
+    <div style="font-size:13px;color:#c4b5fd">RUN SCORE</div>
+    <div class="ghostcmp" id="rGhost"></div>
+    <div style="font-size:18px;margin:6px 0">Coins earned: <b style="color:#fde047" id="rCoins">0</b></div>
+    <button class="btn btn-ad" id="btn2x">📺 2× COINS</button>
+    <div class="menurow">
+      <button class="btn btn-play" id="btnNext" data-primary style="font-size:20px;padding:14px 34px">NEXT ▶</button>
+      <button class="btn btn-sec" id="btnMenu">MENU</button>
+    </div>
+    <button class="btn btn-ghost2" id="btnRestart1" style="margin-top:2px">↺ START FROM LEVEL 1</button>
+  </div>
+</div>
+
+<!-- REVIVE -->
+<div id="revive" class="screen modal hidden">
+  <div class="card">
+    <h1 class="lose">ARMY WIPED! 💀</h1>
+    <p style="margin:10px 0;font-size:15px">Revive with <b style="color:#4ade80" id="revAmt">0</b> soldiers (50% of your peak)?</p>
+    <button class="btn btn-ad" id="btnRevive" data-primary>📺 WATCH AD — REVIVE</button><br>
+    <button class="btn btn-ghost2" id="btnGiveUp">Give up</button>
+  </div>
+</div>
+
+<!-- FAKE AD -->
+<div id="adOverlay" class="screen hidden" style="background:#000;z-index:60">
+  <div style="color:#666;font-size:13px;letter-spacing:3px;margin-bottom:14px">ADVERTISEMENT (MOCK)</div>
+  <div style="font-size:60px">📺</div>
+  <div id="adTimer" style="color:#fff;font-size:22px;font-weight:800;margin-top:14px">3</div>
+  <button class="btn btn-ghost2 hidden" id="adSkip" style="margin-top:20px">Skip ▸</button>
+</div>
+
+<!-- DAILY BONUS -->
+<div id="daily" class="screen modal hidden">
+  <div class="card">
+    <h1 style="color:#fde047">DAILY BONUS 🎁</h1>
+    <p style="margin:10px 0;font-size:16px">Day <b id="dayN">1</b> streak — claim <b style="color:#fde047" id="dayCoins">50</b> coins!</p>
+    <button class="btn btn-gold" id="btnClaimDaily" data-primary>CLAIM</button>
+  </div>
+</div>
+
+<div id="rotateHint">Drag / move mouse to steer • ←→ keys work too</div>
+
+<script type="module">
+import * as THREE from './vendor/three.module.js';
+
+/* ============================================================
+   SAVE / PERSISTENCE
+============================================================ */
+const SAVE_KEY = 'numbersArmy_v1';
+const DEFAULTS = {
+  coins: 0, level: 1, bestScore: 0, runs: 0,
+  up: { army: 0, luck: 0, odds: 0 },
+  skins: [0], skin: 0, noAds: false, build: 0,
+  tut: false, muted: false,
+  login: { last: '', streak: 0 },
+  ch: { date: '', wins: 0, maxArmy: 0, gates: 0, claimed: false },
+};
+/* tamper-resistant save: payload + checksum; casual localStorage edits reset to defaults */
+function hash36(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) >>> 0; return h.toString(36); }
+let D;
+try {
+  const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+  const body = (raw && raw.d) ? (raw.h === hash36('na1' + raw.d) ? JSON.parse(raw.d) : {}) : raw;   // legacy plain saves migrate once
+  D = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), body);
+} catch (e) { D = JSON.parse(JSON.stringify(DEFAULTS)); }
+function persist() {
+  try {
+    const s = JSON.stringify(D);
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ d: s, h: hash36('na1' + s) }));
+  } catch (e) {}
+}
+/* analytics stub — swap console for Firebase Analytics / GA4 at launch */
+/* ============================================================
+   FIREBASE ANALYTICS — loads async from CDN; the game never
+   waits for it and works fine offline or with ad-blockers.
+============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyD-lgM8fHo1U5RkSAN6tCDH-z8BZ7wpYLs',
+  authDomain: 'numbers-army.firebaseapp.com',
+  projectId: 'numbers-army',
+  storageBucket: 'numbers-army.firebasestorage.app',
+  messagingSenderId: '171929083404',
+  appId: '1:171929083404:web:4b5649ea4537506564d829',
+  measurementId: 'G-R8RBQ8X440',
+};
+let fbLog = null;
+(async () => {
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getAnalytics, logEvent, isSupported } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js');
+    if (!(await isSupported())) return;
+    const fbApp = initializeApp(FIREBASE_CONFIG);
+    const fbA = getAnalytics(fbApp);
+    fbLog = (name, params) => logEvent(fbA, name, params);
+    console.info('[analytics] Firebase connected');
+  } catch (e) {
+    console.info('[analytics] Firebase unavailable (offline/blocked) — events stay local');
+  }
+})();
+function trackEvent(name, params) {
+  console.info('[analytics]', name, params || {});
+  if (fbLog) { try { fbLog(name, params || {}); } catch (e) {} }
+}
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+/* ============================================================
+   MONETIZATION — real AdMob inside the Android (Capacitor) app,
+   mock ads in the browser. Ad unit IDs are public by design.
+============================================================ */
+const AD_CONFIG = {
+  appId: 'ca-app-pub-2950345167992804~9401201076',
+  rewarded: 'ca-app-pub-2950345167992804/3114958938',
+  interstitial: 'ca-app-pub-2950345167992804/8638748352',
+  testing: true,   // ⚠️ MUST flip to false for the production release build
+};
+const nativeAdMob = () =>
+  (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() &&
+   window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) || null;
+let adMobReady = false;
+async function adMobInit() {
+  const AdMob = nativeAdMob();
+  if (!AdMob || adMobReady) return;
+  try {
+    await AdMob.initialize();
+    // UMP consent (EEA/UK requirement) — no-ops elsewhere
+    try {
+      const info = await AdMob.requestConsentInfo();
+      if (info && info.isConsentFormAvailable && info.status === 'REQUIRED') await AdMob.showConsentForm();
+    } catch (e) {}
+    adMobReady = true;
+  } catch (e) { console.warn('[admob] init failed', e); }
+}
+async function showRewardedAd() {     // resolves true when the reward is earned
+  trackEvent('rewarded_ad_shown');
+  const AdMob = nativeAdMob();
+  if (AdMob) {
+    try {
+      await adMobInit();
+      await AdMob.prepareRewardVideoAd({ adId: AD_CONFIG.rewarded, isTesting: AD_CONFIG.testing });
+      await AdMob.showRewardVideoAd();
+      return true;
+    } catch (e) { console.warn('[admob] rewarded failed, using fallback', e); }
+  }
+  return fakeAd(1500, true);
+}
+async function showInterstitial() {   // natural-break-only, skippable
+  if (D.noAds) return;
+  trackEvent('interstitial_shown');
+  const AdMob = nativeAdMob();
+  if (AdMob) {
+    try {
+      await adMobInit();
+      await AdMob.prepareInterstitial({ adId: AD_CONFIG.interstitial, isTesting: AD_CONFIG.testing });
+      await AdMob.showInterstitial();
+      return;
+    } catch (e) { console.warn('[admob] interstitial failed, using fallback', e); }
+  }
+  return fakeAd(2500, false);
+}
+function purchaseIAP(sku) {           // mock billing — always succeeds
+  trackEvent('iap_purchase', { sku });
+  console.info('[IAP stub] purchase:', sku);
+  return new Promise(res => setTimeout(() => res(true), 400));
+}
+function scheduleNotification(type) { // mock push hook (FCM later)
+  console.info('[Push stub] scheduled:', type);
+}
+function fakeAd(ms, rewarded) {
+  return new Promise(res => {
+    const ov = el('adOverlay'), timer = el('adTimer'), skip = el('adSkip');
+    ov.classList.remove('hidden'); skip.classList.add('hidden');
+    let left = Math.ceil(ms / 1000);
+    timer.textContent = left;
+    const iv = setInterval(() => { left--; timer.textContent = Math.max(0, left); }, 1000);
+    const done = () => { clearInterval(iv); ov.classList.add('hidden'); res(true); };
+    if (!rewarded) setTimeout(() => { skip.classList.remove('hidden'); skip.onclick = done; }, 1000);
+    setTimeout(done, ms);
+  });
+}
+
+/* ============================================================
+   AUDIO — all synthesized, zero downloads, never blocks start
+============================================================ */
+let AC = null, musicOn = false, musicTimer = null, musicStep = 0, musicNext = 0;
+function audioInit() {
+  if (AC || D.muted) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; }
+  if (AC) startMusic();
+}
+function tone(f, t0, dur, type, vol, slide) {
+  if (!AC || D.muted) return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t0);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f + slide), t0 + dur);
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function noise(t0, dur, vol, freq) {
+  if (!AC || D.muted) return;
+  const n = AC.sampleRate * dur, buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = AC.createBufferSource(); s.buffer = buf;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq || 900;
+  const g = AC.createGain(); g.gain.value = vol;
+  s.connect(f); f.connect(g); g.connect(AC.destination); s.start(t0);
+}
+function sfx(name) {
+  if (!AC || D.muted) return;
+  const t = AC.currentTime;
+  switch (name) {
+    case 'good':   tone(660, t, .09, 'triangle', .25); tone(990, t + .07, .12, 'triangle', .25); break;
+    case 'bad':    tone(160, t, .22, 'square', .22, -80); noise(t, .12, .12, 500); break;
+    case 'whoosh': noise(t, .5, .22, 2400); tone(300, t, .5, 'sine', .1, 500); break;
+    case 'gasp':   noise(t, .6, .1, 1200); break;
+    case 'flipwin':  [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * .09, .18, 'triangle', .28)); break;
+    case 'fliplose': [400, 300, 210, 140].forEach((f, i) => tone(f, t + i * .11, .2, 'sawtooth', .18)); break;
+    case 'crunch': noise(t, .25, .35, 700); tone(90, t, .2, 'square', .25); break;
+    case 'bosshit':tone(200, t, .1, 'square', .2, -60); noise(t, .08, .15, 1400); break;
+    case 'fanfare':[523, 523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, t + i * .12, .22, 'square', .16)); break;
+    case 'fail':   [330, 262, 196, 131].forEach((f, i) => tone(f, t + i * .18, .3, 'triangle', .22)); break;
+    case 'tap':    tone(880, t, .06, 'sine', .18); break;
+    case 'coin':   tone(1319, t, .08, 'square', .12); tone(1760, t + .06, .12, 'square', .12); break;
+    case 'shoot':  tone(1200, t, .05, 'square', .07, -500); break;
+  }
+}
+const SCALE = [262, 294, 330, 392, 440, 523, 587, 659]; // C major pentatonic-ish
+const PATTERN = [0, 2, 4, 2, 5, 4, 2, 0, 3, 5, 7, 5, 4, 2, 1, 2];
+function startMusic() {
+  if (musicOn || !AC) return;
+  musicOn = true; musicNext = AC.currentTime + 0.1; musicStep = 0;
+  musicTimer = setInterval(() => {
+    if (!AC || D.muted) return;
+    while (musicNext < AC.currentTime + 0.3) {
+      const s = musicStep % 16;
+      tone(SCALE[PATTERN[s]], musicNext, .22, 'triangle', .05);
+      if (s % 4 === 0) tone(SCALE[PATTERN[s]] / 2, musicNext, .4, 'sine', .06);
+      musicNext += 0.24; musicStep++;
+    }
+  }, 120);
+}
+function setMuted(m) {
+  D.muted = m; persist();
+  document.querySelectorAll('#muteBtn,#btnMuteMenu').forEach(b =>
+    b.textContent = (b.id === 'btnMuteMenu' ? (m ? '🔇 Muted' : '🔊 Sound') : (m ? '🔇' : '🔊')));
+  if (!m) audioInit();
+}
+
+/* ============================================================
+   HELPERS / UI
+============================================================ */
+const el = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmt = n => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 10000 ? Math.round(n / 1000) + 'k' : Math.round(n).toLocaleString();
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  el('toasts').appendChild(t); setTimeout(() => t.remove(), 2800);
+}
+let tutTimer = null;
+function tut(msg, dur) {
+  const t = el('tut'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(tutTimer); tutTimer = setTimeout(() => t.classList.add('hidden'), dur || 2600);
+}
+/* big juicy announcer pops ("MEGA ARMY!") */
+let annBusy = 0; const annQ = [];
+function announce(text, color) {
+  const now = performance.now();
+  if (now < annBusy) { if (annQ.length < 3) annQ.push([text, color]); return; }
+  annBusy = now + 900;
+  const a = el('announce');
+  a.textContent = text; a.style.color = color || '#fde047';
+  a.classList.remove('go'); void a.offsetWidth; a.classList.add('go');
+  setTimeout(() => { if (annQ.length) { const n = annQ.shift(); announce(n[0], n[1]); } }, 950);
+}
+
+/* seeded ghost leaderboard — rotates daily, resets weekly */
+function ghostToday() {
+  const d = new Date(), week = Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 6048e5);
+  let seed = week * 7919 + d.getDay() * 104729 + 13;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const names = ['BlazeRunner', 'MobKing_88', 'xX_Gatecrash_Xx', 'CountMaster', 'RoyalWreck', 'ZeroToHero', 'ArmyAnt'];
+  return { name: names[Math.floor(rnd() * names.length)], score: Math.floor(18000 + rnd() * 82000) };
+}
+
+/* daily challenge — rotates daily */
+const CHALLENGES = [
+  { txt: 'Win 3 runs today', get: () => D.ch.wins, tgt: 3 },
+  { txt: 'Reach a 500+ army once today', get: () => D.ch.maxArmy, tgt: 500 },
+  { txt: 'Clear 25 gates today', get: () => D.ch.gates, tgt: 25 },
+];
+function challengeToday() {
+  if (D.ch.date !== todayStr()) { D.ch = { date: todayStr(), wins: 0, maxArmy: 0, gates: 0, claimed: false }; persist(); }
+  const idx = new Date().getDate() % CHALLENGES.length;
+  return CHALLENGES[idx];
+}
+function checkChallenge() {
+  const c = challengeToday();
+  if (!D.ch.claimed && Math.min(c.get(), c.tgt) >= c.tgt) {
+    D.ch.claimed = true; D.coins += 200; persist();
+    toast('🏆 Daily challenge complete! +200 coins');
+    scheduleNotification('daily_challenge_reset');
+  }
+}
+
+/* ============================================================
+   INPUT — one normalized laneTarget (-1..1) for mouse + touch + keys
+============================================================ */
+let laneTarget = 0, keyL = false, keyR = false, touchDown = false;
+window.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' && !touchDown) return;
+  laneTarget = clamp((e.clientX / window.innerWidth) * 2 - 1, -1, 1);
+});
+window.addEventListener('pointerdown', e => {
+  touchDown = true; audioInit();
+  if (e.pointerType !== 'mouse') laneTarget = clamp((e.clientX / window.innerWidth) * 2 - 1, -1, 1);
+});
+window.addEventListener('pointerup', () => touchDown = false);
+window.addEventListener('keydown', e => {
+  if (e.code === 'ArrowLeft') keyL = true;
+  if (e.code === 'ArrowRight') keyR = true;
+  if (e.code === 'Space' || e.code === 'Enter') {
+    const btn = document.querySelector('.screen:not(.hidden) [data-primary]');
+    if (btn) { e.preventDefault(); btn.click(); }
+  }
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'ArrowLeft') keyL = false;
+  if (e.code === 'ArrowRight') keyR = false;
+});
+
+/* ============================================================
+   THREE.JS SCENE
+============================================================ */
+const TRACK_W = 4;          // half-width
+const renderer = new THREE.WebGLRenderer({ canvas: el('c'), antialias: true });
+let lowEnd = (navigator.hardwareConcurrency || 8) <= 4;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, lowEnd ? 1.25 : 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa5ddf2);
+scene.fog = new THREE.Fog(0xa5ddf2, 45, 125);
+const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 300);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8fb8d0, 1.15));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(6, 14, -8); scene.add(sun);
+
+function onResize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = camera.aspect < 0.8 ? 74 : 62;   // wider FOV for portrait phones
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize); onResize();
+
+/* --- crowd renderer: ONE InstancedMesh per team (one draw call) --- */
+let MAX_VIS = lowEnd ? 160 : 420;
+const unitGeo = new THREE.CapsuleGeometry(0.22, 0.34, 3, 7);
+unitGeo.translate(0, 0.45, 0);
+const SKINS = [
+  { c: 0x3b82f6, name: 'Blue', cost: 0 },
+  { c: 0x22c55e, name: 'Green', cost: 500 },
+  { c: 0xa855f7, name: 'Violet', cost: 1500 },
+  { c: 0xf43f5e, name: 'Rose', cost: 1500 },
+];
+const dummy = new THREE.Object3D();
+const offsets = [];  // sunflower formation, cached
+for (let i = 0; i < 1000; i++) {
+  const r = 0.34 * Math.sqrt(i + 0.5), a = i * 2.399963;
+  offsets.push([r * Math.cos(a), r * Math.sin(a)]);
+}
+function makeCrowdMesh(color) {
+  const m = new THREE.InstancedMesh(unitGeo, new THREE.MeshLambertMaterial({ color }), MAX_VIS);
+  m.count = 0; m.frustumCulled = false; scene.add(m); return m;
+}
+let playerMesh = makeCrowdMesh(SKINS[D.skin].c);
+let enemyMesh = makeCrowdMesh(0xef4444);
+
+function drawCrowd(mesh, count, cx, cz, time, running, spreadMul, baseY) {
+  const n = Math.min(count, MAX_VIS);
+  for (let i = 0; i < n; i++) {
+    const o = offsets[i], sp = spreadMul || 1;
+    const bob = running ? Math.abs(Math.sin(time * 11 + i * 0.73)) * 0.22 : Math.abs(Math.sin(time * 3 + i)) * 0.05;
+    dummy.position.set(cx + o[0] * sp, (baseY || 0) + bob, cz - o[1] * sp * 1.15);
+    dummy.rotation.set(running ? Math.sin(time * 11 + i) * 0.1 : 0, 0, 0);
+    dummy.scale.setScalar(1);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  mesh.count = n;
+  mesh.instanceMatrix.needsUpdate = true;
+}
+
+/* --- label sprites (canvas textures) --- */
+function labelSprite(text, sub, color, scale, pill) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 160;
+  const x = cv.getContext('2d');
+  const tx = new THREE.CanvasTexture(cv);
+  function draw(t) {
+    x.clearRect(0, 0, 256, 160);
+    x.textAlign = 'center';
+    x.font = '900 84px Arial';
+    if (pill) {
+      const w = Math.min(240, Math.max(120, x.measureText(t).width + 60));
+      x.fillStyle = pill;
+      x.beginPath();
+      if (x.roundRect) x.roundRect(128 - w / 2, 18, w, 92, 44); else x.rect(128 - w / 2, 18, w, 92);
+      x.fill();
+      x.fillStyle = color;
+      x.fillText(t, 128, 90);
+    } else {
+      x.fillStyle = color; x.strokeStyle = 'rgba(0,0,0,.55)'; x.lineWidth = 10;
+      x.strokeText(t, 128, sub ? 82 : 104); x.fillText(t, 128, sub ? 82 : 104);
+    }
+    if (sub) { x.font = '800 34px Arial'; x.fillStyle = '#fff'; x.strokeText(sub, 128, 134); x.fillText(sub, 128, 134); }
+    tx.needsUpdate = true;
+  }
+  draw(text);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthWrite: false }));
+  sp.scale.set((scale || 2.6), (scale || 2.6) * 0.62, 1);
+  sp.userData.redraw = draw;
+  return sp;
+}
+
+/* --- particle bursts (pooled) --- */
+const bursts = [];
+function burst(x, y, z, color, n) {
+  if (lowEnd) n = Math.floor(n * 0.4);
+  const g = new THREE.BufferGeometry(), pos = new Float32Array(n * 3), vel = [];
+  for (let i = 0; i < n; i++) {
+    pos.set([x, y, z], i * 3);
+    vel.push([(Math.random() - .5) * 8, Math.random() * 7 + 2, (Math.random() - .5) * 8]);
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ color, size: 0.22, transparent: true }));
+  p.userData = { vel, life: 0.9 };
+  scene.add(p); bursts.push(p);
+}
+function updateBursts(dt) {
+  for (let i = bursts.length - 1; i >= 0; i--) {
+    const p = bursts[i], a = p.geometry.attributes.position;
+    p.userData.life -= dt;
+    for (let j = 0; j < p.userData.vel.length; j++) {
+      const v = p.userData.vel[j];
+      a.array[j * 3] += v[0] * dt; a.array[j * 3 + 1] += v[1] * dt; a.array[j * 3 + 2] += v[2] * dt;
+      v[1] -= 18 * dt;
+    }
+    a.needsUpdate = true;
+    p.material.opacity = Math.max(0, p.userData.life / 0.9);
+    if (p.userData.life <= 0) { scene.remove(p); p.geometry.dispose(); p.material.dispose(); bursts.splice(i, 1); }
+  }
+}
+
+/* ============================================================
+   LEVEL / TRACK GENERATION
+============================================================ */
+const THEMES = [
+  { name: 'Frost Canyon', sky: 0xa5ddf2, base: 0xbfe6f5, cone1: 0x9fd5f0, cone2: 0x7cc0e8, rail: 0xdfeef7, trackA: '#f3f1ea', trackB: '#e7e3d8' },
+  { name: 'Lava Lands', sky: 0xffc09a, base: 0x6b4038, cone1: 0x8a4a3a, cone2: 0xe0703f, rail: 0xf0d5c2, trackA: '#f4e9da', trackB: '#e6d3ba' },
+  { name: 'Candy Kingdom', sky: 0xffd6ec, base: 0xffe3f2, cone1: 0xff9ed2, cone2: 0xa78bfa, rail: 0xfff0f8, trackA: '#fdf4f9', trackB: '#f3dceb' },
+  { name: 'Neon Nights', sky: 0x201545, base: 0x2a1a5e, cone1: 0x7c3aed, cone2: 0x22d3ee, rail: 0x4c1d95, trackA: '#453a80', trackB: '#382e6e' },
+];
+function levelCfg(n) {
+  // tuned generous: early levels are near-unlosable, ramp is slow and smooth
+  const t = Math.min(14, n - 1) / 14, endless = Math.max(0, n - 15);
+  return {
+    pairs: 12 + Math.min(10, Math.floor(n * 0.8)),
+    negChance: clamp(0.05 + 0.35 * t + endless * 0.01 - D.up.luck * 0.03 - (boostLuck ? 0.12 : 0), 0.03, 0.6),
+    mobBase: Math.floor(10 + n * 8 + endless * n),
+    bossHpMult: Math.min(2.0, 0.9 + n * 0.1),
+    gapCycle: clamp(3.6 - n * 0.15 - endless * 0.02, 1.1, 3.6),
+    speed: 11.5 + Math.min(6, n * 0.35),
+    gateSpacing: 26,
+    theme: THEMES[Math.floor((n - 1) / 5) % THEMES.length],
+    bossType: n <= 2 ? 0 : n % 3,     // 0 King (gap) · 1 Stomper (dodge slams) · 2 Cannon King (dodge shots)
+    movingGates: n >= 4,
+    saws: n >= 3,
+  };
+}
+let trackGroup = null, gates = [], mobs = [], saws = [], coins = [], pows = [], stairs = null, bossZ = 0, boss = null, castle = null;
+
+function makeSaw() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const x = cv.getContext('2d');
+  x.translate(64, 64);
+  x.fillStyle = '#a9d9f5';
+  for (let i = 0; i < 12; i++) { x.rotate(Math.PI / 6); x.fillRect(-8, -62, 16, 26); }
+  x.beginPath(); x.arc(0, 0, 48, 0, 7); x.fill();
+  x.fillStyle = '#7cc0e8'; x.beginPath(); x.arc(0, 0, 30, 0, 7); x.fill();
+  x.fillStyle = '#ef4444'; x.beginPath(); x.arc(0, 0, 12, 0, 7); x.fill();
+  const tex = new THREE.CanvasTexture(cv);
+  return new THREE.Mesh(new THREE.CircleGeometry(1.5, 24),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
+}
+
+function disposeTrack() {
+  if (!trackGroup) return;
+  trackGroup.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
+  });
+  scene.remove(trackGroup); trackGroup = null;
+}
+
+function rollOp(cfg, idx, forceGood) {
+  const lvl = R.level;
+  const good = forceGood || Math.random() >= cfg.negChance;
+  if (good) {
+    if (Math.random() < 0.22) return { k: 'mul', v: Math.random() < 0.18 && lvl > 2 ? 3 : 2 };
+    return { k: 'add', v: Math.floor(4 + lvl * 2.4 + idx * 1.6 + Math.random() * 8) };
+  }
+  if (Math.random() < 0.38) return { k: 'div', v: 2 };
+  return { k: 'sub', v: Math.floor(4 + lvl * 3 + idx * 2.2 + Math.random() * 10) };
+}
+const opText = op => op.k === 'add' ? '+' + op.v : op.k === 'mul' ? '×' + op.v : op.k === 'sub' ? '−' + op.v : '÷' + op.v;
+const opGood = op => op.k === 'add' || op.k === 'mul';
+
+function makeGateMesh(op, x, z, wager) {
+  const g = new THREE.Group();
+  const paneColor = wager ? 0xfbd44a : op.k === 'mystery' ? 0xc084fc : opGood(op) ? 0x8ecdf7 : 0xff9d9d;
+  const postColor = 0x33415c;
+  const pane = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.7),
+    new THREE.MeshBasicMaterial({ color: paneColor, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+  pane.position.y = 1.45; g.add(pane);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.18, 0.18), new THREE.MeshLambertMaterial({ color: postColor }));
+  frame.position.y = 2.9; g.add(frame);
+  [-1.85, 1.85].forEach(px => {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.9, 0.18), new THREE.MeshLambertMaterial({ color: postColor }));
+    post.position.set(px, 1.45, 0); g.add(post);
+  });
+  const lab = wager ? labelSprite('2×|0', 'WAGER 50%', '#fff7d6', 3.1)
+            : op.k === 'mystery' ? labelSprite('?', 'MYSTERY', '#f3e8ff', 3.0)
+            : labelSprite(opText(op), '', opGood(op) ? '#ffffff' : '#ffe1e1', 2.8);
+  lab.position.y = 2.1; g.add(lab);
+  g.position.set(x, 0, z);
+  return g;
+}
+
+function buildTrack(cfg) {
+  disposeTrack();
+  trackGroup = new THREE.Group(); scene.add(trackGroup);
+  gates = []; mobs = []; saws = []; coins = []; pows = []; stairs = null;
+
+  const th = cfg.theme;
+  scene.background.setHex(th.sky);
+  scene.fog.color.setHex(th.sky);
+
+  const len = cfg.pairs * cfg.gateSpacing + 140;
+  bossZ = len - 60;
+
+  // white track with subtle chevrons (Count-Masters-style ivory road)
+  const gcv = document.createElement('canvas'); gcv.width = 64; gcv.height = 128;
+  const gx = gcv.getContext('2d');
+  gx.fillStyle = th.trackA; gx.fillRect(0, 0, 64, 128);
+  gx.fillStyle = th.trackB;
+  gx.beginPath();
+  gx.moveTo(0, 128); gx.lineTo(32, 88); gx.lineTo(64, 128);
+  gx.lineTo(64, 104); gx.lineTo(32, 64); gx.lineTo(0, 104);
+  gx.closePath(); gx.fill();
+  const gtx = new THREE.CanvasTexture(gcv);
+  gtx.wrapS = gtx.wrapT = THREE.RepeatWrapping; gtx.repeat.set(1, len / 10);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_W * 2 + 1.2, len + 80),
+    new THREE.MeshLambertMaterial({ map: gtx }));
+  ground.rotation.x = -Math.PI / 2; ground.position.z = len / 2 - 20;
+  trackGroup.add(ground);
+  [-1, 1].forEach(s => {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, len + 80),
+      new THREE.MeshLambertMaterial({ color: th.rail }));
+    rail.position.set(s * (TRACK_W + 0.6), 0.35, len / 2 - 20);
+    trackGroup.add(rail);
+  });
+
+  // frozen lake + low-poly ice canyon walls
+  const base = new THREE.Mesh(new THREE.PlaneGeometry(240, len + 160),
+    new THREE.MeshLambertMaterial({ color: th.base }));
+  base.rotation.x = -Math.PI / 2; base.position.set(0, -0.9, len / 2 - 20);
+  trackGroup.add(base);
+  const iceMats = [new THREE.MeshLambertMaterial({ color: th.cone1 }), new THREE.MeshLambertMaterial({ color: th.cone2 })];
+  for (let ic = 0; ic < (lowEnd ? 26 : 64); ic++) {
+    const h = 6 + Math.random() * 16;
+    const ice = new THREE.Mesh(new THREE.ConeGeometry(1.5 + Math.random() * 2.6, h, 5), iceMats[ic % 2]);
+    const s = ic % 2 === 0 ? -1 : 1;
+    ice.position.set(s * (8 + Math.random() * 16), h / 2 - 1, Math.random() * (len + 60) - 30);
+    ice.rotation.y = Math.random() * Math.PI;
+    trackGroup.add(ice);
+  }
+
+  // checkered finish line at the boss arena entrance
+  const ck = document.createElement('canvas'); ck.width = 80; ck.height = 16;
+  const cx2 = ck.getContext('2d');
+  for (let i = 0; i < 10; i++) for (let j = 0; j < 2; j++) {
+    cx2.fillStyle = (i + j) % 2 ? '#111' : '#fff'; cx2.fillRect(i * 8, j * 8, 8, 8);
+  }
+  const ckt = new THREE.CanvasTexture(ck);
+  const finish = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_W * 2, 1.6),
+    new THREE.MeshBasicMaterial({ map: ckt }));
+  finish.rotation.x = -Math.PI / 2; finish.position.set(0, 0.02, bossZ - 24);
+  trackGroup.add(finish);
+
+  // gates: pairs; every 4th pair is a wager gate + safe lane; one mystery gate per run
+  let z = 34;
+  const coinGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.1, 14);
+  const coinMat = new THREE.MeshLambertMaterial({ color: 0xfbbf24 });
+  const mysteryAt = 2 + Math.floor(Math.random() * Math.max(1, cfg.pairs - 4));
+  for (let i = 0; i < cfg.pairs; i++) {
+    const isWager = (i > 1 && i % 4 === 3);
+    if (isWager) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const gm = makeGateMesh(null, side * 2, z, true);
+      trackGroup.add(gm);
+      gates.push({ z, side, wager: true, used: false, mesh: gm });
+    } else {
+      let opL = rollOp(cfg, i), opR = rollOp(cfg, i);
+      if (!opGood(opL) && !opGood(opR)) { if (Math.random() < 0.5) opL = rollOp(cfg, i, true); else opR = rollOp(cfg, i, true); }
+      if (i === 0 && R.level <= 2) { opL = { k: 'add', v: 10 }; opR = { k: 'mul', v: 2 }; }
+      if (i === mysteryAt) { if (Math.random() < 0.5) opL = { k: 'mystery' }; else opR = { k: 'mystery' }; }
+      const mL = makeGateMesh(opL, -2, z), mR = makeGateMesh(opR, 2, z);
+      trackGroup.add(mL); trackGroup.add(mR);
+      const g = { z, pair: [{ op: opL, mesh: mL }, { op: opR, mesh: mR }], used: false, off: 0 };
+      if (cfg.movingGates && i > 1 && i % 3 === 1) g.mv = { amp: 1.15, sp: 0.7 + Math.random() * 0.6, ph: Math.random() * 6 };
+      gates.push(g);
+    }
+    // rival mob after every 3rd pair — waits in a pink battle circle
+    if (i % 3 === 2) {
+      const count = Math.floor(cfg.mobBase * (0.6 + i * 0.18) * (0.8 + Math.random() * 0.5));
+      const mz = z + cfg.gateSpacing * 0.55;
+      const mx = (Math.random() - .5) * 3;
+      const zone = new THREE.Mesh(new THREE.CircleGeometry(3.6, 26),
+        new THREE.MeshBasicMaterial({ color: 0xffc9d6, transparent: true, opacity: 0.85, depthWrite: false }));
+      zone.rotation.x = -Math.PI / 2; zone.position.set(mx * 0.4, 0.03, mz - 1);
+      trackGroup.add(zone);
+      const lab = labelSprite(String(count), '', '#ffffff', 2.3, '#ef4444');
+      lab.position.set(mx, 2.8, mz); trackGroup.add(lab);
+      mobs.push({ z: mz, count, label: lab, dead: false, fight: false, ft: 0, x: mx, preArmy: 0 });
+    }
+    // spinning saw hazard (level 3+) — steer around it!
+    if (cfg.saws && i % 5 === 4) {
+      const sx = (Math.random() < .5 ? -1 : 1) * 2.6;
+      const saw = makeSaw();
+      saw.position.set(sx, 1.15, z + cfg.gateSpacing * 0.45);
+      trackGroup.add(saw);
+      saws.push({ z: saw.position.z, x: sx, mesh: saw, hit: false });
+    }
+    // coin trail between gates
+    if (i % 2 === 1) {
+      const cx3 = (Math.random() - 0.5) * 5.2;
+      for (let j = 0; j < 3; j++) {
+        const cm = new THREE.Mesh(coinGeo, coinMat);
+        cm.rotation.x = Math.PI / 2;
+        cm.position.set(cx3, 0.9, z + 8 + j * 1.8);
+        trackGroup.add(cm);
+        coins.push({ z: cm.position.z, x: cx3, mesh: cm, got: false });
+      }
+    }
+    // power-up orbs
+    if (i === 4 || i === 9) {
+      const type = ['shield', 'magnet', 'frenzy'][Math.floor(Math.random() * 3)];
+      const pm = new THREE.Group();
+      const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0),
+        new THREE.MeshLambertMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.75 }));
+      orb.position.y = 1.1; pm.add(orb);
+      const ic = labelSprite(type === 'shield' ? '🛡' : type === 'magnet' ? '🧲' : '⚡', '', '#fff', 1.7);
+      ic.position.y = 2.2; pm.add(ic);
+      const px = (Math.random() - 0.5) * 5;
+      pm.position.set(px, 0, z + 16);
+      trackGroup.add(pm);
+      pows.push({ z: z + 16, x: px, mesh: pm, type, got: false });
+    }
+    z += cfg.gateSpacing;
+  }
+
+  // castle
+  castle = new THREE.Group();
+  const stone = new THREE.MeshLambertMaterial({ color: 0xdb9ed0 });   // pink castle like the reference
+  const keep = new THREE.Mesh(new THREE.BoxGeometry(9, 7, 5), stone); keep.position.y = 3.5; castle.add(keep);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.4, 0.4), new THREE.MeshLambertMaterial({ color: 0x5b4a6e }));
+  door.position.set(0, 1.7, -2.4); castle.add(door);
+  [-4, 4].forEach(x => {
+    const tw = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.4, 9, 8), stone);
+    tw.position.set(x, 4.5, 0); castle.add(tw);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(1.6, 2.2, 8), new THREE.MeshLambertMaterial({ color: 0x7c6ce0 }));
+    cap.position.set(x, 10, 0); castle.add(cap);
+  });
+  // castle-builder meta perks show up in-game
+  if (D.build >= 3) [-4, 4].forEach(x => {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.6, 5), new THREE.MeshLambertMaterial({ color: 0x475569 }));
+    pole.position.set(x, 11.7, 0); castle.add(pole);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.7), new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide }));
+    flag.position.set(x + 0.6, 12, 0); castle.add(flag);
+  });
+  if (D.build >= 5) {
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(9.4, 0.5, 5.4), new THREE.MeshLambertMaterial({ color: 0xfbbf24 }));
+    trim.position.y = 7.2; castle.add(trim);
+  }
+  if (D.build >= 6) {
+    const drg = new THREE.Group();
+    const bodyD = new THREE.Mesh(new THREE.CapsuleGeometry(0.7, 1.6, 3, 8), new THREE.MeshLambertMaterial({ color: 0x16a34a }));
+    bodyD.rotation.z = Math.PI / 2; bodyD.position.y = 0.7; drg.add(bodyD);
+    const headD = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.1, 6), new THREE.MeshLambertMaterial({ color: 0x16a34a }));
+    headD.rotation.x = Math.PI / 2; headD.position.set(0, 0.9, -1.6); drg.add(headD);
+    drg.position.set(0, 7.6, 0); castle.add(drg);
+  }
+  castle.position.set(0, 0, bossZ + 16);
+  trackGroup.add(castle);
+
+  // boss: three rotating types — King (gap), Stomper (dodge slams), Cannon King (dodge shots)
+  boss = { type: cfg.bossType, hp: 100, maxHp: 100, gap: 1, nextGap: 0, gapT: 0, shields: [],
+           started: false, flash: 0, frenzy: false, sT: 0, target: 1, balls: [], ring: null,
+           bl: [], blT: 0,
+           bulletGeo: new THREE.SphereGeometry(0.13, 6, 6),
+           bulletMat: new THREE.MeshBasicMaterial({ color: 0xfff176 }) };
+  const king = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(1.1, 1.7, 4, 10), new THREE.MeshLambertMaterial({ color: 0xdc2626 }));
+  body.position.y = 2.1; king.add(body);
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.65, 0.7, 8), new THREE.MeshLambertMaterial({ color: 0xfbbf24 }));
+  crown.position.y = 4.15; king.add(crown);
+  [-0.5, 0, 0.5].forEach(x => {
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.5, 4), new THREE.MeshLambertMaterial({ color: 0xfbbf24 }));
+    spike.position.set(x, 4.7, 0); king.add(spike);
+  });
+  king.position.set(0, 0, bossZ + 6);
+  if (cfg.bossType === 1) king.scale.setScalar(1.5);
+  boss.king = king; trackGroup.add(king);
+  for (let i = 0; i < 3; i++) {
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(2.55, 2.6, 0.4),
+      new THREE.MeshLambertMaterial({ color: 0x64748b, transparent: true }));
+    sh.position.set((i - 1) * 2.67, 1.3, bossZ);
+    sh.visible = cfg.bossType === 0;      // only the King hides behind shields
+    trackGroup.add(sh); boss.shields.push(sh);
+  }
+  const ring = new THREE.Mesh(new THREE.RingGeometry(1.4, 2.3, 24),
+    new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; ring.visible = false;
+  trackGroup.add(ring); boss.ring = ring;
+  const hpLab = labelSprite('👑', 'KING MOB', '#fecaca', 3.4);
+  hpLab.position.set(0, 5.6, bossZ + 6); trackGroup.add(hpLab);
+  boss.hpLab = hpLab;
+}
+
+/* ============================================================
+   RUN STATE MACHINE
+============================================================ */
+let state = 'menu';       // menu | run | flip | boss | over
+let boostLuck = false;
+const R = {};             // per-run state
+function resetRun() {
+  R.level = D.level;
+  R.army = 10 + D.up.army * 5;
+  R.peak = R.army;
+  R.gatesCleared = 0;
+  R.streak = 0;
+  R.z = 0; R.x = 0;
+  R.revived = false;
+  R.won = false;
+  R.firstWagerDone = D.tut;   // tutorial: first ever wager is a guaranteed win
+  R.cfg = levelCfg(R.level);
+  R.shake = 0;
+  R.bossDps = 0;
+  R.tutGateShown = false;
+  R.coinBonus = 0;
+  R.shield = false; R.magnetT = 0; R.frenzyT = 0;
+  R.annIdx = 0;
+  R.stairMult = 1; R.stairIdx = -1; R.baseY = 0;
+}
+const streakMult = () => R.streak >= 6 ? 2 : R.streak >= 4 ? 1.5 : R.streak >= 2 ? 1.2 : 1;
+
+function startRun() {
+  resetRun();
+  buildTrack(R.cfg);
+  state = 'ready';
+  el('menu').classList.add('hidden'); el('results').classList.add('hidden');
+  el('hud').classList.remove('hidden'); el('armyLabel').classList.remove('hidden');
+  el('bossbarWrap').classList.add('hidden');
+  el('hudLevel').textContent = 'LEVEL ' + R.level;
+  el('progLvl').textContent = R.level;
+  el('progFill').style.width = '0%';
+  updateHudCoins(); updateStreakHud();
+  refreshReadyCards();
+  el('ready').classList.remove('hidden');
+  trackEvent('run_start', { level: R.level });
+  scheduleNotification('comeback_streak');
+}
+function beginRun() {
+  if (state !== 'ready') return;
+  el('ready').classList.add('hidden');
+  state = 'run';
+  announce('LEVEL ' + R.level + ' — ' + R.cfg.theme.name.toUpperCase() + '!', '#ffffff');
+  if (!D.tut) tut('👆 Drag (or move mouse) to steer!', 2600);
+}
+function refreshReadyCards() {
+  [['army', 'cardArmy', '👥 Start Units', l => 'Start with ' + (10 + (l + 1) * 5)],
+   ['luck', 'cardLuck', '🍀 Gate Luck', l => (((l + 1) * 3)) + '% fewer bad gates']].forEach(([k, id, nm, ds]) => {
+    const def = UP_DEFS[k], lvl = D.up[k], card = el(id);
+    const maxed = lvl >= def.max, cost = maxed ? 0 : def.cost(lvl);
+    card.innerHTML = '<div class="pcnm">' + nm + ' <span class="pclvl">LVL ' + lvl + '</span></div>' +
+      '<div class="pcds">' + (maxed ? 'MAX LEVEL' : ds(lvl)) + '</div>' +
+      '<div class="pccost">' + (maxed ? '—' : '🪙 ' + fmt(cost)) + '</div>';
+    card.classList.toggle('off', maxed || D.coins < cost);
+    card.onpointerdown = e => {
+      e.stopPropagation();
+      if (maxed || D.coins < cost) return;
+      D.coins -= cost; D.up[k]++; persist(); sfx('coin');
+      if (k === 'army') { R.army = 10 + D.up.army * 5; R.peak = Math.max(R.peak, R.army); }
+      else { R.cfg = levelCfg(R.level); buildTrack(R.cfg); }   // luck reshuffles the gates ahead
+      updateHudCoins(); refreshReadyCards();
+    };
+  });
+}
+el('ready').addEventListener('pointerdown', e => {
+  if (e.target.closest('.precard')) return;
+  beginRun();
+});
+el('btnGo').onclick = beginRun;
+
+function goodPick() {
+  R.streak++;
+  if (R.streak === 6) announce('STREAK ×2! 🔥🔥', '#fb923c');
+  updateStreakHud(true);
+}
+function badPick() { if (R.streak) { R.streak = 0; updateStreakHud(true); } }
+function updateStreakHud(pop) {
+  const h = el('hudStreak');
+  h.textContent = 'STREAK ×' + streakMult() + (R.streak >= 2 ? ' 🔥' : '');
+  if (pop) { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); setTimeout(() => h.classList.remove('pop'), 160); }
+}
+function updateHudCoins() { el('hudCoins').textContent = '🪙 ' + fmt(D.coins); }
+const ANN_T = [[100, 'MEGA ARMY! 💪'], [250, 'ARMY OF DOOM! 🔥'], [500, 'UNSTOPPABLE HORDE! ⚡'], [1000, 'THOUSAND STRONG! 👑'], [2000, 'WORLD DOMINATION! 🌍']];
+function setArmy(v) {
+  R.army = Math.min(99999, Math.max(0, v));
+  R.peak = Math.max(R.peak, R.army);
+  D.ch.maxArmy = Math.max(D.ch.maxArmy, Math.floor(R.army));
+  while (R.annIdx < ANN_T.length && R.army >= ANN_T[R.annIdx][0]) { announce(ANN_T[R.annIdx][1]); R.annIdx++; }
+}
+
+/* --- gate resolution: gates can chip you but NEVER kill you (fights and bosses can) --- */
+function applyGate(op) {
+  if (op.k === 'mystery') return applyMystery();
+  R.gatesCleared++; D.ch.gates++;
+  const bad = !opGood(op);
+  if (bad && R.shield) {
+    R.shield = false;
+    announce('🛡 SHIELD SAVED YOU!', '#7dd3fc'); sfx('good');
+    return;
+  }
+  let v = op.v;
+  if (R.frenzyT > 0 && op.k === 'add') v *= 2;
+  const a = R.army;
+  if (op.k === 'add') setArmy(a + v);
+  if (op.k === 'mul') setArmy(a * v);
+  if (op.k === 'sub') setArmy(Math.max(1, a - v));
+  if (op.k === 'div') setArmy(Math.max(1, Math.ceil(a / v)));
+  if (bad && R.army === 1 && a > 1) announce('LAST MAN STANDING! 😱', '#fca5a5');
+  if (!bad) { goodPick(); sfx('good'); burst(R.x, 1.4, R.z + 2, 0x4ade80, 30); R.squash = 0.25; }
+  else { badPick(); sfx('bad'); R.shake = lowEnd ? 0 : 0.35; }
+}
+function applyMystery() {
+  R.gatesCleared++; D.ch.gates++;
+  const r = Math.random();
+  let txt, col, good = true;
+  if (r < 0.05)      { setArmy(R.army * 5); txt = 'JACKPOT! ×5 🎰'; col = '#fde047'; }
+  else if (r < 0.15) { setArmy(R.army * 3); txt = 'TRIPLE! ×3 🎉'; col = '#fde047'; }
+  else if (r < 0.40) { setArmy(R.army * 2); txt = 'DOUBLE! ×2 ✨'; col = '#4ade80'; }
+  else if (r < 0.65) { setArmy(R.army + 50); txt = '+50 RECRUITS!'; col = '#4ade80'; }
+  else if (r < 0.85) { setArmy(Math.max(1, Math.ceil(R.army / 2))); txt = 'OUCH! ÷2 💀'; col = '#f87171'; good = false; }
+  else               { setArmy(Math.max(1, R.army - 30)); txt = '−30 SOLDIERS 😬'; col = '#f87171'; good = false; }
+  announce(txt, col);
+  if (good) { goodPick(); sfx('flipwin'); burst(R.x, 1.5, R.z + 2, 0xc084fc, 40); R.squash = 0.25; }
+  else { badPick(); sfx('bad'); R.shake = lowEnd ? 0 : 0.3; }
+}
+
+/* --- wager coin flip: the wow moment --- */
+function startFlip() {
+  state = 'flip';
+  sfx('whoosh'); sfx('gasp');
+  const wagered = Math.floor(R.army * 0.5);
+  const winChance = 0.5 + D.up.odds * 0.04;
+  const win = !R.firstWagerDone ? true : Math.random() < winChance;
+  R.firstWagerDone = true;
+  const ov = el('flipOverlay'), coin = el('coin'), txt = el('flipText');
+  ov.classList.remove('hidden');
+  txt.textContent = 'DOUBLE OR NOTHING…';
+  coin.style.transition = 'none'; coin.style.transform = 'rotateY(0deg)';
+  void coin.offsetWidth;
+  coin.style.transition = 'transform 1.5s cubic-bezier(.2,.8,.3,1)';
+  coin.style.transform = 'rotateY(' + (1800 + (win ? 0 : 180)) + 'deg)';
+  setTimeout(() => {
+    if (win) {
+      setArmy(R.army + wagered); goodPick();
+      txt.textContent = '🎉 DOUBLED! +' + fmt(wagered);
+      sfx('flipwin'); burst(R.x, 2, R.z + 3, 0xfbbf24, 60);
+    } else {
+      setArmy(R.army - wagered); badPick();
+      txt.textContent = '💀 BUSTED! −' + fmt(wagered);
+      sfx('fliplose'); R.shake = lowEnd ? 0 : 0.5;
+    }
+  }, 1550);
+  setTimeout(() => {
+    ov.classList.add('hidden');
+    if (R.army <= 0) { state = 'run'; die(); }
+    else state = 'run';   // bossStart() fires naturally when we reach the boss zone
+  }, 2500);
+}
+
+/* --- mob clash: crowds melt into each other 1:1 until one side is gone --- */
+function fightUpdate(m, sdt) {
+  const drain = (60 + 2 * Math.min(R.army, m.count)) * sdt;
+  m.count -= drain;
+  setArmy(R.army - drain);
+  m.ft += sdt;
+  if (m.ft > 0.12) {
+    m.ft = 0;
+    burst((R.x + m.x) / 2, 1.2, m.z - 2, Math.random() < .5 ? 0xef4444 : 0x60a5fa, 12);
+    sfx('bosshit');
+  }
+  m.label.userData.redraw(String(Math.max(0, Math.ceil(m.count))));
+  if (m.count <= 0) {
+    m.dead = true; m.label.visible = false;
+    goodPick(); sfx('good');
+    burst(m.x, 1.4, m.z, 0x60a5fa, 40);
+    if (m.preArmy && R.army < m.preArmy * 0.2) announce('CLOSE ONE! 😅', '#4ade80');
+    else toast('⚔ Mob crushed!');
+  } else if (R.army <= 0) {
+    setArmy(0); badPick(); die();
+  }
+}
+
+/* --- boss fight: 3 types + TAP-frenzy finisher --- */
+function bossStart() {
+  state = 'boss';
+  boss.started = true;
+  // boss HP scales to YOUR army (0.9× on level 1) so the finale is winnable but tense
+  boss.hp = boss.maxHp = Math.max(60, Math.floor(R.army * R.cfg.bossHpMult));
+  el('bossbarWrap').classList.remove('hidden');
+  el('bossName').textContent = ['👑 KING MOB', '🦶 THE STOMPER', '💣 CANNON KING'][boss.type];
+  tut(boss.type === 0 ? '👑 Steer into the GLOWING GAP — yellow flash shows the next one!'
+    : boss.type === 1 ? '🦶 DODGE the red stomp zone!'
+    : '💣 DODGE the cannonballs!', 3000);
+  sfx('bosshit');
+}
+function laneZone(x) { return x < -TRACK_W / 3 ? 0 : x > TRACK_W / 3 ? 2 : 1; }
+/* army opens fire on the king — tracer bullets stream whenever damage is landing */
+function updateBullets(dt, shooting) {
+  boss.blT += dt;
+  const rate = boss.frenzy ? 0.025 : 0.06;
+  while (boss.blT > rate) {
+    boss.blT -= rate;
+    if (!shooting || boss.bl.length > 40) continue;
+    const bm = new THREE.Mesh(boss.bulletGeo, boss.bulletMat);
+    bm.position.set(R.x + (Math.random() - 0.5) * 2.5, 0.9 + Math.random() * 0.8, R.z + 1.5);
+    trackGroup.add(bm);
+    boss.bl.push({ mesh: bm, t: 0, x0: bm.position.x, y0: bm.position.y, z0: bm.position.z });
+    if (Math.random() < 0.12) sfx('shoot');
+  }
+  for (let i = boss.bl.length - 1; i >= 0; i--) {
+    const b = boss.bl[i];
+    b.t += dt * 2.4;
+    const tt = Math.min(1, b.t);
+    b.mesh.position.set(b.x0 * (1 - tt), b.y0 + (3 - b.y0) * tt, b.z0 + (bossZ + 5 - b.z0) * tt);
+    if (b.t >= 1) { trackGroup.remove(b.mesh); boss.bl.splice(i, 1); }
+  }
+}
+function bossUpdate(dt, time) {
+  const n = R.level;
+  if (!boss.frenzy && boss.hp <= boss.maxHp * 0.3) {
+    // FINISHER: guards drop, the whole army opens fire on the king
+    boss.frenzy = true;
+    boss.shields.forEach(s => s.visible = false);
+    boss.ring.visible = false;
+    announce('OPEN FIRE! 🔫🔫🔫', '#fde047');
+    sfx('gasp');
+  }
+  updateBullets(dt, boss.frenzy || boss.type !== 0 || laneZone(R.x) === boss.gap);
+  if (boss.frenzy) {
+    boss.hp -= R.army * 0.9 * dt;           // full-auto barrage melts him fast
+    boss.king.rotation.z = Math.sin(time * 20) * 0.06;
+  } else if (boss.type === 0) {
+    // KING: damage through the glowing gap; next gap telegraphs yellow
+    const cycle = R.level === 1 ? R.cfg.gapCycle * 1.4 : R.cfg.gapCycle;
+    boss.gapT += dt;
+    if (boss.gapT >= cycle) {
+      boss.gapT = 0;
+      boss.gap = boss.nextGap;
+      boss.nextGap = (boss.gap + 1 + Math.floor(Math.random() * 2)) % 3;
+    }
+    const warn = boss.gapT > cycle - 0.7;
+    boss.shields.forEach((sh, i) => {
+      const isGap = i === boss.gap;
+      sh.material.color.setHex(isGap ? 0x4ade80 : (warn && i === boss.nextGap) ? 0xfde047 : 0x64748b);
+      sh.material.opacity = isGap ? 0.25 + Math.sin(time * 8) * 0.12 : 1;
+    });
+    if (laneZone(R.x) === boss.gap) {
+      boss.hp -= R.army * 0.9 * dt;
+      boss.flash += dt;
+      if (boss.flash > 0.12) { boss.flash = 0; sfx('bosshit'); burst((boss.gap - 1) * 2.67, 1.5, bossZ, 0xfde047, 14); }
+    } else {
+      setArmy(R.army - (R.army * 0.05 + 1 + n * 0.5) * dt);   // gentle chip, not a melt
+      if (Math.random() < dt * 3) burst(R.x, 1, bossZ - 1.5, 0x94a3b8, 6);
+    }
+  } else if (boss.type === 1) {
+    // STOMPER: always taking damage; dodge the telegraphed slam zone
+    boss.hp -= R.army * 0.55 * dt;
+    boss.sT += dt;
+    if (boss.sT < 1.1) {
+      if (!boss.ring.visible) {
+        boss.target = laneZone(R.x);
+        boss.ring.visible = true;
+        boss.ring.position.set((boss.target - 1) * 2.67, 0.05, bossZ - 11);
+      }
+      boss.ring.scale.setScalar(1 + Math.sin(time * 14) * 0.15);
+    } else if (boss.ring.visible) {
+      boss.ring.visible = false;
+      R.shake = lowEnd ? 0 : 0.5; sfx('crunch');
+      burst((boss.target - 1) * 2.67, 0.5, bossZ - 11, 0x94a3b8, 30);
+      if (laneZone(R.x) === boss.target) { setArmy(R.army - Math.max(3, R.army * 0.15)); announce('STOMPED! 🦶', '#f87171'); }
+    }
+    if (boss.sT >= 2.4) boss.sT = 0;
+    boss.king.position.y = Math.abs(Math.sin(time * 3)) * 0.4;
+  } else {
+    // CANNON KING: always taking damage; dodge arcing cannonballs
+    boss.hp -= R.army * 0.55 * dt;
+    boss.sT += dt;
+    if (boss.sT >= 1.6) {
+      boss.sT = 0;
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 10), new THREE.MeshLambertMaterial({ color: 0x1f2937 }));
+      trackGroup.add(ball);
+      boss.balls.push({ mesh: ball, tx: R.x, t: 0 });
+      sfx('whoosh');
+    }
+    for (let i = boss.balls.length - 1; i >= 0; i--) {
+      const b = boss.balls[i];
+      b.t += dt / 0.95;
+      b.mesh.position.set(b.tx * Math.min(1, b.t), 1 + Math.sin(Math.PI * Math.min(1, b.t)) * 3.2, bossZ + 4 - 15 * Math.min(1, b.t));
+      if (b.t >= 1) {
+        burst(b.tx, 0.6, bossZ - 11, 0x94a3b8, 25);
+        R.shake = lowEnd ? 0 : 0.4; sfx('crunch');
+        if (Math.abs(R.x - b.tx) < 1.5) { setArmy(R.army - Math.max(3, R.army * 0.12)); announce('DIRECT HIT! 💥', '#f87171'); }
+        trackGroup.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose();
+        boss.balls.splice(i, 1);
+      }
+    }
+  }
+  boss.king.scale.setScalar((boss.type === 1 ? 1.5 : 1) * (0.75 + 0.25 * Math.max(0, boss.hp / boss.maxHp)));
+  el('bossbar').style.width = (Math.max(0, boss.hp / boss.maxHp) * 100) + '%';
+  if (boss.hp <= 0) winRun();
+  else if (R.army < 1) { setArmy(0); die(); }
+}
+
+/* --- death / revive / win --- */
+function die() {
+  if (state === 'over') return;
+  state = 'over';
+  sfx('fail');
+  if (!R.revived) {
+    el('revAmt').textContent = fmt(Math.ceil(R.peak * 0.5));
+    el('revive').classList.remove('hidden');
+  } else endRun(false);
+}
+el('btnRevive').onclick = async () => {
+  sfx('tap');
+  el('revive').classList.add('hidden');
+  await showRewardedAd();
+  R.revived = true;
+  setArmy(Math.ceil(R.peak * 0.5));
+  state = (boss && boss.started && boss.hp > 0) ? 'boss' : 'run';
+  toast('💪 Revived with ' + fmt(R.army) + ' soldiers!');
+};
+el('btnGiveUp').onclick = () => { sfx('tap'); el('revive').classList.add('hidden'); endRun(false); };
+
+const STAIR_MULTS = [1.5, 2, 2.5, 3, 4, 5];
+function winRun() {
+  if (state === 'over' || state === 'stairs') return;
+  state = 'stairs';
+  R.won = true;
+  sfx('fanfare');
+  el('bossbarWrap').classList.add('hidden');
+  boss.king.visible = false;
+  if (castle) castle.visible = false;
+  burst(0, 3, bossZ + 4, 0xfbbf24, 120); burst(-2, 4, bossZ + 6, 0x4ade80, 120); burst(2, 4, bossZ + 6, 0x60a5fa, 120);
+  D.ch.wins++;
+  buildStairs();
+  announce('BONUS STAIRS! 🏆', '#fde047');
+}
+function buildStairs() {
+  stairs = { z0: bossZ + 2, len: 7, group: new THREE.Group() };
+  for (let k = 0; k < 6; k++) {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(8.5, 1.3, stairs.len),
+      new THREE.MeshLambertMaterial({ color: k % 2 === 0 ? 0xfbbf24 : 0xa78bfa }));
+    step.position.set(0, k * 1.3 + 0.65, stairs.z0 + stairs.len * k + stairs.len / 2);
+    stairs.group.add(step);
+    const lb = labelSprite('×' + STAIR_MULTS[k], '', '#ffffff', 3.2);
+    lb.position.set(0, k * 1.3 + 2.7, stairs.z0 + stairs.len * k + stairs.len / 2);
+    stairs.group.add(lb);
+  }
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 1.4), new THREE.MeshLambertMaterial({ color: 0xd97706 }));
+  chest.position.set(0, 6 * 1.3 + 0.8, stairs.z0 + stairs.len * 6 + 2);
+  stairs.group.add(chest);
+  trackGroup.add(stairs.group);
+  R.baseY = 0; R.stairIdx = -1; R.stairMult = 1;
+}
+function stairYAt(z) {
+  if (!stairs) return 0;
+  const idx = Math.floor((z - stairs.z0) / stairs.len);
+  return idx < 0 ? 0 : (Math.min(5, idx) + 1) * 1.3;
+}
+function stairsUpdate(dt) {
+  R.z += 9 * dt;
+  const idx = Math.min(5, Math.floor((R.z - stairs.z0) / stairs.len));
+  if (idx >= 0 && idx > R.stairIdx) {
+    R.stairIdx = idx;
+    R.stairMult = STAIR_MULTS[idx];
+    if (idx > 0) setArmy(Math.max(0, Math.floor(R.army / 2)));   // half your army converts to bonus each step
+    announce('×' + R.stairMult + '!', '#fde047'); sfx('coin');
+    if (R.army < 8 || idx === 5) {
+      burst(R.x, R.baseY + 2, R.z + 3, 0xfde047, 100);
+      state = 'over';
+      setTimeout(() => endRun(true), 900);
+    }
+  }
+  R.baseY = stairYAt(R.z);
+}
+/* on the stairs the crowd forms a column, each row standing on its own step — a living ladder */
+function drawCrowdStairs(mesh, count, time) {
+  const n = Math.min(count, MAX_VIS);
+  for (let i = 0; i < n; i++) {
+    const col = i % 3, row = Math.floor(i / 3);
+    const zi = R.z - row * 0.95;
+    dummy.position.set((col - 1) * 1.15 + Math.sin(i * 2.7) * 0.12,
+      stairYAt(zi) + Math.abs(Math.sin(time * 10 + i * 0.9)) * 0.2, zi);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.setScalar(1);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  mesh.count = n;
+  mesh.instanceMatrix.needsUpdate = true;
+}
+
+async function endRun(won) {
+  el('hud').classList.add('hidden'); el('armyLabel').classList.add('hidden');
+  D.runs++;
+  const bossMult = won ? 2 : 1;
+  const score = Math.floor(Math.max(1, R.peak) * Math.max(1, R.gatesCleared) * bossMult);
+  const sm = streakMult();
+  const stairMult = won ? R.stairMult : 1;
+  let coins = Math.max(5, Math.floor(score / 100 * sm * stairMult)) + R.coinBonus;
+  D.bestScore = Math.max(D.bestScore, score);
+  D.coins += coins;
+  if (won) D.level++;
+  boostLuck = false;
+  persist();
+  trackEvent('run_end', { level: R.level, won, score, coins, peak: R.peak });
+  checkChallenge();
+  if (D.runs % 3 === 0 && !D.noAds) await showInterstitial();
+
+  // results card
+  el('resTitle').textContent = won ? 'CASTLE CLAIMED! 🏰' : 'DEFEATED 💀';
+  el('resTitle').className = won ? 'win' : 'lose';
+  el('rPeak').textContent = fmt(R.peak);
+  el('rGates').textContent = R.gatesCleared;
+  el('rBoss').textContent = '×' + bossMult;
+  el('rStreak').textContent = '×' + sm;
+  el('rPicked').textContent = '+' + fmt(R.coinBonus);
+  el('rowStairs').style.display = stairMult > 1 ? '' : 'none';
+  el('rStairs').textContent = '×' + stairMult;
+  el('rScore').textContent = fmt(score);
+  el('rCoins').textContent = fmt(coins);
+  const gh = ghostToday();
+  el('rGhost').innerHTML = score > gh.score
+    ? '👑 You beat today\'s ghost <b>' + gh.name + '</b> (' + fmt(gh.score) + ')!'
+    : 'Today\'s ghost: <b>' + gh.name + '</b> — ' + fmt(gh.score) + ' · you: ' + fmt(score);
+  el('btnNext').textContent = won ? 'NEXT LEVEL ▶' : 'RETRY ▶';
+  el('btnRestart1').style.display = (!won && D.level > 1) ? '' : 'none';
+  const b2 = el('btn2x'); b2.disabled = false; b2.textContent = '📺 2× COINS';
+  b2.onclick = async () => {
+    sfx('tap'); b2.disabled = true;
+    await showRewardedAd();
+    D.coins += coins; persist();
+    b2.textContent = '✓ DOUBLED (+' + fmt(coins) + ')';
+    sfx('coin');
+  };
+  el('results').classList.remove('hidden');
+  if (!D.tut) { D.tut = true; persist(); }
+}
+
+/* ============================================================
+   MAIN LOOP
+============================================================ */
+let last = performance.now(), fpsAcc = 0, fpsN = 0, fpsChecked = lowEnd;
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const time = now / 1000;
+
+  // auto-degrade if we can't hold ~45fps in the first seconds of play
+  if (!fpsChecked && state !== 'menu') {
+    fpsAcc += dt; fpsN++;
+    if (fpsN >= 240) {
+      fpsChecked = true;
+      if (fpsN / fpsAcc < 45) {
+        lowEnd = true; MAX_VIS = 160;
+        renderer.setPixelRatio(1);
+        console.info('[perf] low-end mode enabled');
+      }
+    }
+  }
+
+  const ts = state === 'flip' ? 0.12 : 1;   // slow-mo during coin flip
+  const sdt = dt * ts;
+
+  if (state === 'run' || state === 'boss' || state === 'flip' || state === 'ready' || state === 'stairs') {
+    // steering
+    if (keyL) laneTarget = clamp(laneTarget - 2.6 * dt, -1, 1);
+    if (keyR) laneTarget = clamp(laneTarget + 2.6 * dt, -1, 1);
+    // camera faces +z, which mirrors world-x on screen — negate so input left = screen left
+    const targetX = -laneTarget * (TRACK_W - 0.6);
+    R.x += (targetX - R.x) * Math.min(1, dt * 9);
+
+    if (state === 'run' || state === 'flip') {
+      const fmob = mobs.find(m => m.fight && !m.dead);
+      if (fmob) fightUpdate(fmob, sdt);        // battle halts the march
+      else R.z += R.cfg.speed * sdt;
+
+      // triggers
+      for (const g of gates) {
+        if (g.used || R.z < g.z) continue;
+        if (R.z > g.z + 4) { g.used = true; continue; }
+        g.used = true;
+        if (g.wager) {
+          const onWagerSide = (g.side < 0) === (R.x < 0);
+          if (onWagerSide) startFlip();
+        } else {
+          const pick = (R.x - (g.off || 0)) < 0 ? g.pair[0] : g.pair[1];
+          applyGate(pick.op);
+          pick.mesh.scale.set(1.25, 1.25, 1);
+          setTimeout(() => pick.mesh && pick.mesh.scale.set(1, 1, 1), 150);
+        }
+      }
+      for (const m of mobs) {
+        if (!m.dead && !m.fight && R.z + 4.5 >= m.z - 2.5) {
+          m.fight = true; m.preArmy = R.army;
+          sfx('crunch'); R.shake = lowEnd ? 0 : 0.3;
+        }
+      }
+      for (const s of saws) {
+        s.mesh.rotation.z += dt * 6;
+        if (!s.hit && Math.abs(R.z - s.z) < 1.4 && Math.abs(R.x - s.x) < 2.0) {
+          s.hit = true;
+          if (R.shield) {
+            R.shield = false;
+            announce('🛡 SHIELD SAVED YOU!', '#7dd3fc'); sfx('good');
+          } else {
+            const loss = Math.max(2, Math.ceil(R.army * 0.12));
+            setArmy(Math.max(1, R.army - loss)); badPick();
+            sfx('crunch'); R.shake = lowEnd ? 0 : 0.45;
+            burst(s.x, 1, s.z, 0xef4444, 40);
+            toast('🪚 −' + fmt(loss) + '!');
+          }
+        }
+      }
+      // coins & power-ups
+      R.magnetT = Math.max(0, R.magnetT - dt);
+      R.frenzyT = Math.max(0, R.frenzyT - dt);
+      const cr = R.magnetT > 0 ? 6 : 1.5;
+      for (const c of coins) {
+        if (c.got || c.z < R.z - 4 || c.z > R.z + 70) continue;
+        c.mesh.rotation.z += dt * 4;
+        if (Math.abs(R.z - c.z) < cr && Math.abs(R.x - c.x) < cr) {
+          c.got = true; c.mesh.visible = false;
+          R.coinBonus += 2; sfx('coin');
+        }
+      }
+      for (const p of pows) {
+        if (p.got || p.z > R.z + 70) continue;
+        p.mesh.rotation.y += dt * 2;
+        if (Math.abs(R.z - p.z) < 1.6 && Math.abs(R.x - p.x) < 1.8) {
+          p.got = true; p.mesh.visible = false; sfx('flipwin');
+          if (p.type === 'shield') { R.shield = true; announce('🛡 SHIELD UP!', '#7dd3fc'); }
+          if (p.type === 'magnet') { R.magnetT = 12; announce('🧲 COIN MAGNET!', '#fde047'); }
+          if (p.type === 'frenzy') { R.frenzyT = 8; announce('⚡ FRENZY! + GATES ×2', '#fb923c'); }
+        }
+      }
+      // sliding gate pairs (level 4+)
+      for (const g of gates) {
+        if (g.used || !g.mv || g.z < R.z - 5 || g.z > R.z + 80) continue;
+        g.off = Math.sin(time * g.mv.sp + g.mv.ph) * g.mv.amp;
+        g.pair[0].mesh.position.x = -2 + g.off;
+        g.pair[1].mesh.position.x = 2 + g.off;
+      }
+      // tutorial nudges
+      if (!D.tut) {
+        const nextG = gates.find(g => !g.used && !g.wager && g.z > R.z);
+        if (nextG && !R.tutGateShown && nextG.z - R.z < 22) { R.tutGateShown = true; tut('✅ Pick the GREEN gate to grow your army!', 2400); }
+        const nextW = gates.find(g => !g.used && g.wager && g.z > R.z);
+        if (nextW && nextW.z - R.z < 22 && !R.tutWagerShown) { R.tutWagerShown = true; tut('🪙 GOLD GATE: 50/50 double-or-nothing. First one\'s free 😉', 2800); }
+      }
+      if (state === 'run' && R.z >= bossZ - 26 && !boss.started) bossStart();
+    }
+    if (state === 'boss') {
+      R.z = Math.min(R.z + R.cfg.speed * dt, bossZ - 11);
+      bossUpdate(dt, time);
+    }
+    if (state === 'stairs') stairsUpdate(dt);
+
+    // camera + shake
+    R.shake = Math.max(0, R.shake - dt * 1.6);
+    const shx = R.shake ? (Math.random() - .5) * R.shake : 0;
+    const shy = R.shake ? (Math.random() - .5) * R.shake : 0;
+    camera.position.set(R.x * 0.35 + shx, 7.6 + (R.baseY || 0) + shy, R.z - 11);
+    camera.lookAt(R.x * 0.55, 1.2 + (R.baseY || 0), R.z + 9);
+
+    // crowds
+    const spread = R.squash ? 1 - R.squash : 1;
+    if (R.squash) R.squash = Math.max(0, R.squash - dt * 1.4);
+    if (state === 'stairs') drawCrowdStairs(playerMesh, Math.max(1, Math.floor(R.army)), time);
+    else drawCrowd(playerMesh, Math.max(1, Math.floor(R.army)), R.x, R.z, time, true, spread, R.baseY || 0);
+    let visMobs = 0;
+    for (const m of mobs) {
+      if (m.dead || m.z < R.z - 4 || m.z > R.z + 90) continue;
+      if (visMobs === 0) drawCrowd(enemyMesh, Math.min(Math.ceil(m.count), MAX_VIS), m.x, m.fight ? m.z - 2.8 : m.z, time, m.fight, 1.3);
+      visMobs++;
+      if (visMobs === 1) break;   // draw nearest mob crowd; labels mark the rest
+    }
+    if (!visMobs) enemyMesh.count = 0, enemyMesh.instanceMatrix.needsUpdate = true;
+
+    // floating army count
+    const v = new THREE.Vector3(R.x, 2.6 + (R.baseY || 0), R.z).project(camera);
+    const al = el('armyLabel');
+    al.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+    al.style.top = ((-v.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+    al.textContent = fmt(Math.max(0, Math.floor(R.army)));
+    el('progFill').style.width = (clamp(R.z / (bossZ - 11), 0, 1) * 100) + '%';
+    el('buffs').textContent = (R.shield ? '🛡 ' : '') +
+      (R.magnetT > 0 ? '🧲' + Math.ceil(R.magnetT) + 's ' : '') +
+      (R.frenzyT > 0 ? '⚡' + Math.ceil(R.frenzyT) + 's' : '');
+    updateHudCoins();
+  } else if (state === 'menu' || state === 'over') {
+    // idle menu camera slowly orbiting a small parade crowd
+    const t = time * 0.25;
+    camera.position.set(Math.sin(t) * 10, 6.5, -10 + Math.cos(t) * 3);
+    camera.lookAt(0, 1, 4);
+    drawCrowd(playerMesh, 40, 0, 4, time, true, 1.6);
+    enemyMesh.count = 0; enemyMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  updateBursts(dt);
+  renderer.render(scene, camera);
+}
+
+/* ============================================================
+   MENU / SHOP WIRING
+============================================================ */
+function refreshMenu() {
+  el('btnPlayLvl').textContent = D.level > 15 ? 'ENDLESS ' + (D.level - 15) : 'LEVEL ' + D.level;
+  const gh = ghostToday();
+  el('ghostLine').textContent = '👻 Today\'s ghost: ' + gh.name + ' — ' + fmt(gh.score) + ' · Your best: ' + fmt(D.bestScore) + ' (resets weekly)';
+  const c = challengeToday();
+  el('chLine').textContent = '🎯 Daily: ' + c.txt + ' — ' + Math.min(c.get(), c.tgt) + '/' + c.tgt + (D.ch.claimed ? ' ✓' : '');
+}
+const UP_DEFS = {
+  army: { max: 10, cost: l => Math.floor(100 * Math.pow(1.7, l)), ds: l => 'Start with ' + (10 + l * 5) + ' soldiers' },
+  luck: { max: 8, cost: l => Math.floor(120 * Math.pow(1.8, l)), ds: l => (l * 3) + '% fewer bad gates' },
+  odds: { max: 5, cost: l => Math.floor(150 * Math.pow(1.9, l)), ds: l => 'Wager win chance ' + (50 + l * 4) + '%' },
+};
+function refreshShop() {
+  el('shopCoins').textContent = '🪙 ' + fmt(D.coins);
+  for (const k of ['army', 'luck', 'odds']) {
+    const def = UP_DEFS[k], lvl = D.up[k], btn = el('up' + k[0].toUpperCase() + k.slice(1));
+    el('ds' + k[0].toUpperCase() + k.slice(1)).textContent = def.ds(lvl) + ' (Lv ' + lvl + ')';
+    if (lvl >= def.max) { btn.textContent = 'MAX'; btn.disabled = true; }
+    else { btn.textContent = '🪙 ' + fmt(def.cost(lvl)); btn.disabled = D.coins < def.cost(lvl); }
+    btn.onclick = () => {
+      const cost = def.cost(D.up[k]);
+      if (D.coins < cost || D.up[k] >= def.max) return;
+      D.coins -= cost; D.up[k]++; persist(); sfx('coin'); refreshShop();
+    };
+  }
+  const row = el('skinRow'); row.innerHTML = '';
+  SKINS.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'skin' + (D.skin === i ? ' sel' : '');
+    d.style.background = '#' + s.c.toString(16).padStart(6, '0');
+    d.textContent = D.skins.includes(i) ? (D.skin === i ? '✓' : '') : '🪙' + s.cost;
+    d.onclick = () => {
+      sfx('tap');
+      if (!D.skins.includes(i)) {
+        if (D.coins < s.cost) { toast('Not enough coins!'); return; }
+        D.coins -= s.cost; D.skins.push(i);
+      }
+      D.skin = i; persist();
+      playerMesh.material.color.setHex(s.c);
+      refreshShop();
+    };
+    row.appendChild(d);
+  });
+}
+/* castle-builder meta */
+const BUILD_PIECES = [['🏗️ Foundation', 500], ['🧱 Stone Walls', 1200], ['🗼 Twin Towers', 2500], ['🚪 Royal Gate', 4000], ['🚩 Victory Flags', 6000], ['🐉 Guardian Dragon', 9000]];
+function refreshBuild() {
+  el('buildCoins').textContent = '🪙 ' + fmt(D.coins);
+  el('buildArt').textContent = ['🏜️', '🏗️', '🧱', '🏰', '🏰🚪', '🏰🚩', '🏰🐉'][D.build];
+  const list = el('buildList'); list.innerHTML = '';
+  BUILD_PIECES.forEach(([nm, cost], i) => {
+    const row = document.createElement('div'); row.className = 'uprow';
+    const done = i < D.build, next = i === D.build;
+    const info = document.createElement('div');
+    info.innerHTML = '<div class="nm">' + nm + '</div><div class="ds">' + (done ? 'Built ✓' : next ? 'Next up!' : 'Locked') + '</div>';
+    const btn = document.createElement('button'); btn.className = 'btn-up';
+    btn.textContent = done ? '✓' : '🪙 ' + fmt(cost);
+    btn.disabled = !next || D.coins < cost;
+    btn.onclick = () => {
+      if (i !== D.build || D.coins < cost) return;
+      D.coins -= cost; D.build++; persist(); sfx('fanfare');
+      toast('🏰 ' + nm + ' built!');
+      refreshBuild();
+    };
+    row.appendChild(info); row.appendChild(btn); list.appendChild(row);
+  });
+}
+el('btnBuild').onclick = () => { sfx('tap'); refreshBuild(); el('buildScreen').classList.remove('hidden'); };
+el('btnCloseBuild').onclick = () => { sfx('tap'); el('buildScreen').classList.add('hidden'); refreshMenu(); };
+
+el('btnPlay').onclick = () => { sfx('tap'); audioInit(); startRun(); };
+el('btnShop').onclick = () => { sfx('tap'); refreshShop(); el('shop').classList.remove('hidden'); };
+el('btnCloseShop').onclick = () => { sfx('tap'); el('shop').classList.add('hidden'); refreshMenu(); };
+el('btnBooster').onclick = async () => {
+  sfx('tap');
+  await showRewardedAd();
+  boostLuck = true;
+  toast('🍀 Gate luck boosted for your next run!');
+};
+el('iapBundle').onclick = async () => {
+  if (await purchaseIAP('starter_bundle')) {
+    D.coins += 1000; if (D.up.army < UP_DEFS.army.max) D.up.army++;
+    persist(); sfx('coin'); toast('🎁 Starter bundle unlocked!'); refreshShop();
+  }
+};
+el('iapNoAds').onclick = async () => {
+  if (await purchaseIAP('remove_interstitials')) {
+    D.noAds = true; persist(); toast('🚫 Interstitials removed forever!');
+  }
+};
+el('btnNext').onclick = () => { sfx('tap'); el('results').classList.add('hidden'); startRun(); };
+el('btnRestart1').onclick = () => {
+  sfx('tap');
+  D.level = 1; persist();
+  trackEvent('restart_level_1');
+  el('results').classList.add('hidden');
+  startRun();
+};
+el('btnMenu').onclick = () => { sfx('tap'); el('results').classList.add('hidden'); state = 'menu'; refreshMenu(); el('menu').classList.remove('hidden'); };
+el('muteBtn').onclick = () => setMuted(!D.muted);
+el('btnMuteMenu').onclick = () => { setMuted(!D.muted); };
+el('btnResetSave').onclick = () => {
+  if (confirm('Reset all progress?')) { localStorage.removeItem(SAVE_KEY); location.reload(); }
+};
+
+/* daily login bonus */
+function checkDaily() {
+  const t = todayStr();
+  if (D.login.last === t) return;
+  const yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  D.login.streak = (D.login.last === yest) ? D.login.streak + 1 : 1;
+  D.login.last = t; persist();
+  const amt = 50 * Math.min(7, D.login.streak);
+  el('dayN').textContent = D.login.streak;
+  el('dayCoins').textContent = amt;
+  el('daily').classList.remove('hidden');
+  el('btnClaimDaily').onclick = () => {
+    sfx('coin'); D.coins += amt; persist();
+    el('daily').classList.add('hidden'); refreshMenu();
+  };
+}
+
+/* boot */
+setMuted(D.muted);
+refreshMenu();
+checkDaily();
+requestAnimationFrame(frame);
+
+/* optional generated art — used automatically if the files exist in assets/ */
+const heroImg = new Image();
+heroImg.onload = () => {
+  el('menu').style.backgroundImage =
+    'linear-gradient(180deg, rgba(158,217,240,.82), rgba(96,165,250,.9)), url(assets/hero.jpg)';
+  el('menu').style.backgroundSize = 'cover';
+  el('menu').style.backgroundPosition = 'center';
+};
+heroImg.src = 'assets/hero.jpg';
+
+/* PWA: offline capability (needed for the Android TWA wrapper) */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
