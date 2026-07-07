@@ -1,0 +1,13 @@
+{
+  "appId": "com.viralvideoshai.numbersarmy",
+  "appName": "Numbers Army",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "AdMob": {
+      "appId": "ca-app-pub-2950345167992804~9401201076"
+    }
+  }
+}

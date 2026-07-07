@@ -12,3 +12,6 @@ desktop.ini
 
 # Local scratch
 *.log
+KEYSTORE-BACKUP-INFO.txt
+keystore.properties
+www/
