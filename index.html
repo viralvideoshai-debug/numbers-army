@@ -13,6 +13,27 @@
   html,body { width:100%; height:100%; overflow:hidden; background:#a5ddf2; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; touch-action:none; user-select:none; -webkit-user-select:none; }
   #c { position:fixed; inset:0; width:100%; height:100%; display:block; }
 
+  /* ---------- Loading splash ---------- */
+  #splash { position:fixed; inset:0; z-index:100; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px;
+    background:linear-gradient(180deg,#1b2a6b 0%,#2a3f9e 55%,#3b82f6 100%);
+    transition:opacity .5s ease; }
+  #splash.gone { opacity:0; pointer-events:none; }
+  #splashArt { width:min(52vw,220px); height:min(52vw,220px); border-radius:28px;
+    background:url('assets/icon.png') center/cover, #24357e;
+    box-shadow:0 12px 40px rgba(0,0,0,.45), 0 0 0 4px rgba(255,255,255,.12);
+    animation:splashPulse 1.8s ease-in-out infinite; }
+  @keyframes splashPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  #splashTitle { font-size:clamp(30px,8vw,52px); font-weight:900; color:#fff; letter-spacing:2px;
+    text-shadow:0 3px 0 #1d4ed8, 0 6px 18px rgba(0,0,0,.4); }
+  #splashTitle b { color:#fde047; }
+  #splashBar { width:min(60vw,260px); height:8px; border-radius:99px; background:rgba(255,255,255,.2); overflow:hidden; }
+  #splashFill { width:0%; height:100%; border-radius:99px; background:linear-gradient(90deg,#fde047,#f59e0b);
+    animation:splashLoad 1.3s ease-out forwards; }
+  @keyframes splashLoad { 0%{width:8%} 60%{width:70%} 100%{width:100%} }
+  #splashTip { color:#cfe0ff; font-size:13px; font-weight:600; }
+  #splashCredit { position:absolute; bottom:calc(24px + env(safe-area-inset-bottom)); color:rgba(255,255,255,.5); font-size:12px; font-weight:600; }
+
   .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; }
   .hidden { display:none !important; }
 
@@ -145,6 +166,15 @@
 <body>
 <canvas id="c"></canvas>
 
+<!-- Branded fullscreen loading splash -->
+<div id="splash">
+  <div id="splashArt"></div>
+  <div id="splashTitle"><span>NUMBERS</span> <b>ARMY</b></div>
+  <div id="splashBar"><div id="splashFill"></div></div>
+  <div id="splashTip">Multiply. Wager. Conquer the castle.</div>
+  <div id="splashCredit">a SocialBucket Studios game</div>
+</div>
+
 <!-- HUD -->
 <div id="hud" class="hidden">
   <div class="pill" id="hudLevel">LEVEL 1</div>
@@ -200,6 +230,7 @@
   <div class="panel">
     <h2>MY CASTLE 🏰 &nbsp;<span id="buildCoins" style="font-size:15px;color:#fde047"></span></h2>
     <div id="buildArt" style="text-align:center;font-size:44px;margin:6px 0"></div>
+    <div id="buildBonus" style="text-align:center;font-size:13px;color:#fde047;margin:2px 0 10px"></div>
     <div id="buildList"></div>
     <div style="text-align:center;margin-top:12px"><button class="btn btn-sec" id="btnCloseBuild" data-primary>DONE</button></div>
   </div>
@@ -987,7 +1018,7 @@ let boostLuck = false;
 const R = {};             // per-run state
 function resetRun() {
   R.level = D.level;
-  R.army = 10 + D.up.army * 5;
+  R.army = 10 + D.up.army * 5 + castleArmyBonus();
   R.peak = R.army;
   R.gatesCleared = 0;
   R.streak = 0;
@@ -1042,7 +1073,7 @@ function refreshReadyCards() {
       e.stopPropagation();
       if (maxed || D.coins < cost) return;
       D.coins -= cost; D.up[k]++; persist(); sfx('coin');
-      if (k === 'army') { R.army = 10 + D.up.army * 5; R.peak = Math.max(R.peak, R.army); }
+      if (k === 'army') { R.army = 10 + D.up.army * 5 + castleArmyBonus(); R.peak = Math.max(R.peak, R.army); }
       else { R.cfg = levelCfg(R.level); buildTrack(R.cfg); }   // luck reshuffles the gates ahead
       updateHudCoins(); refreshReadyCards();
     };
@@ -1384,7 +1415,7 @@ async function endRun(won) {
   const score = Math.floor(Math.max(1, R.peak) * Math.max(1, R.gatesCleared) * bossMult);
   const sm = streakMult();
   const stairMult = won ? R.stairMult : 1;
-  let coins = Math.max(5, Math.floor(score / 100 * sm * stairMult)) + R.coinBonus;
+  let coins = Math.floor((Math.max(5, Math.floor(score / 100 * sm * stairMult)) + R.coinBonus) * castleCoinMult());
   D.bestScore = Math.max(D.bestScore, score);
   D.coins += coins;
   if (won) D.level++;
@@ -1638,17 +1669,31 @@ function refreshShop() {
     row.appendChild(d);
   });
 }
-/* castle-builder meta */
-const BUILD_PIECES = [['🏗️ Foundation', 500], ['🧱 Stone Walls', 1200], ['🗼 Twin Towers', 2500], ['🚪 Royal Gate', 4000], ['🚩 Victory Flags', 6000], ['🐉 Guardian Dragon', 9000]];
+/* castle-builder meta — each piece grants a PERMANENT bonus (coins or starting army) */
+const BUILD_PIECES = [
+  ['🏗️ Foundation',      500, 'coin', '+10% coins every run'],
+  ['🧱 Stone Walls',    1200, 'army', '+5 starting soldiers'],
+  ['🗼 Twin Towers',    2500, 'coin', '+10% coins every run'],
+  ['🚪 Royal Gate',     4000, 'army', '+5 starting soldiers'],
+  ['🚩 Victory Flags',  6000, 'coin', '+15% coins every run'],
+  ['🐉 Guardian Dragon',9000, 'army', '+10 starting soldiers'],
+];
+const COIN_BONUS = [0.10, 0, 0.10, 0, 0.15, 0];   // per index, only counts if built
+const ARMY_BONUS = [0, 5, 0, 5, 0, 10];
+function castleCoinMult() { let b = 1; for (let i = 0; i < D.build; i++) b += COIN_BONUS[i]; return b; }
+function castleArmyBonus() { let a = 0; for (let i = 0; i < D.build; i++) a += ARMY_BONUS[i]; return a; }
 function refreshBuild() {
   el('buildCoins').textContent = '🪙 ' + fmt(D.coins);
   el('buildArt').textContent = ['🏜️', '🏗️', '🧱', '🏰', '🏰🚪', '🏰🚩', '🏰🐉'][D.build];
+  el('buildBonus').innerHTML = '🏰 Active bonuses: <b>+' + Math.round((castleCoinMult() - 1) * 100) +
+    '% coins</b> · <b>+' + castleArmyBonus() + ' start army</b>';
   const list = el('buildList'); list.innerHTML = '';
-  BUILD_PIECES.forEach(([nm, cost], i) => {
+  BUILD_PIECES.forEach(([nm, cost, type, benefit], i) => {
     const row = document.createElement('div'); row.className = 'uprow';
     const done = i < D.build, next = i === D.build;
     const info = document.createElement('div');
-    info.innerHTML = '<div class="nm">' + nm + '</div><div class="ds">' + (done ? 'Built ✓' : next ? 'Next up!' : 'Locked') + '</div>';
+    info.innerHTML = '<div class="nm">' + nm + '</div><div class="ds" style="color:#4ade80">' + benefit +
+      '</div><div class="ds">' + (done ? 'Built ✓' : next ? 'Next up!' : 'Locked') + '</div>';
     const btn = document.createElement('button'); btn.className = 'btn-up';
     btn.textContent = done ? '✓' : '🪙 ' + fmt(cost);
     btn.disabled = done || !next;          // only the next piece is buyable; feedback on tap
@@ -1657,7 +1702,7 @@ function refreshBuild() {
       if (i !== D.build) return;
       if (D.coins < cost) { sfx('bad'); toast('Need 🪙 ' + fmt(cost - D.coins) + ' more — keep playing!'); return; }
       D.coins -= cost; D.build++; persist(); sfx('fanfare');
-      toast('🏰 ' + nm + ' built!');
+      toast('🏰 ' + nm + ' built! ' + benefit);
       refreshBuild();
     };
     row.appendChild(info); row.appendChild(btn); list.appendChild(row);
@@ -1736,6 +1781,14 @@ heroImg.onload = () => {
   el('menu').style.backgroundPosition = 'center';
 };
 heroImg.src = 'assets/hero.jpg';
+
+/* dismiss the loading splash once the first frame has rendered */
+function hideSplash() {
+  const s = el('splash'); if (!s || s.classList.contains('gone')) return;
+  s.classList.add('gone'); setTimeout(() => s.remove(), 600);
+}
+requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(hideSplash, 700)));
+setTimeout(hideSplash, 2500);   // hard fallback so the splash never gets stuck
 
 /* PWA: offline capability (needed for the Android TWA wrapper) */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
