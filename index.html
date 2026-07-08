@@ -302,7 +302,7 @@
   </div>
 </div>
 
-<div id="rotateHint">Drag / move mouse to steer • ←→ keys work too</div>
+<div id="rotateHint">Drag to steer</div>
 
 <script type="module">
 import * as THREE from './vendor/three.module.js';
@@ -1057,6 +1057,7 @@ function beginRun() {
   if (state !== 'ready') return;
   el('ready').classList.add('hidden');
   state = 'run';
+  const rh = el('rotateHint'); if (rh) setTimeout(() => rh.style.display = 'none', 2500);
   announce('LEVEL ' + R.level + ' — ' + R.cfg.theme.name.toUpperCase() + '!', '#ffffff');
   if (!D.tut) tut('👆 Drag (or move mouse) to steer!', 2600);
 }
