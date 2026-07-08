@@ -11,7 +11,7 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { width:100%; height:100%; overflow:hidden; background:#a5ddf2; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; touch-action:none; user-select:none; -webkit-user-select:none; }
-  #c { position:fixed; inset:0; display:block; }
+  #c { position:fixed; inset:0; width:100%; height:100%; display:block; }
 
   .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; }
   .hidden { display:none !important; }
@@ -391,9 +391,17 @@ async function showInterstitial() {   // natural-break-only, skippable
   }
   return fakeAd(2500, false);
 }
-function purchaseIAP(sku) {           // mock billing — always succeeds
+/* Real Google Play Billing isn't connected yet, so paid items are locked
+   (no free grants). Flip BILLING_ENABLED to true once products + billing
+   plugin are set up in Play Console. */
+const BILLING_ENABLED = false;
+function purchaseIAP(sku) {
+  if (!BILLING_ENABLED) {
+    toast('🔒 Store opens soon — stay tuned!');
+    return Promise.resolve(false);
+  }
   trackEvent('iap_purchase', { sku });
-  console.info('[IAP stub] purchase:', sku);
+  console.info('[IAP] purchase:', sku);
   return new Promise(res => setTimeout(() => res(true), 400));
 }
 function scheduleNotification(type) { // mock push hook (FCM later)
@@ -1539,8 +1547,11 @@ function frame(now) {
     R.shake = Math.max(0, R.shake - dt * 1.6);
     const shx = R.shake ? (Math.random() - .5) * R.shake : 0;
     const shy = R.shake ? (Math.random() - .5) * R.shake : 0;
-    camera.position.set(R.x * 0.35 + shx, 7.6 + (R.baseY || 0) + shy, R.z - 11);
-    camera.lookAt(R.x * 0.55, 1.2 + (R.baseY || 0), R.z + 9);
+    // framing adapts to screen shape so the army stays visible on tall phones
+    const tall = camera.aspect < 0.7;
+    const back = tall ? 14.5 : 11, high = tall ? 9.2 : 7.6, fwd = tall ? 4.5 : 9;
+    camera.position.set(R.x * 0.35 + shx, high + (R.baseY || 0) + shy, R.z - back);
+    camera.lookAt(R.x * 0.55, 1.2 + (R.baseY || 0), R.z + fwd);
 
     // crowds
     const spread = R.squash ? 1 - R.squash : 1;
@@ -1640,9 +1651,11 @@ function refreshBuild() {
     info.innerHTML = '<div class="nm">' + nm + '</div><div class="ds">' + (done ? 'Built ✓' : next ? 'Next up!' : 'Locked') + '</div>';
     const btn = document.createElement('button'); btn.className = 'btn-up';
     btn.textContent = done ? '✓' : '🪙 ' + fmt(cost);
-    btn.disabled = !next || D.coins < cost;
+    btn.disabled = done || !next;          // only the next piece is buyable; feedback on tap
+    if (next && D.coins < cost) btn.style.opacity = '.6';
     btn.onclick = () => {
-      if (i !== D.build || D.coins < cost) return;
+      if (i !== D.build) return;
+      if (D.coins < cost) { sfx('bad'); toast('Need 🪙 ' + fmt(cost - D.coins) + ' more — keep playing!'); return; }
       D.coins -= cost; D.build++; persist(); sfx('fanfare');
       toast('🏰 ' + nm + ' built!');
       refreshBuild();
@@ -1662,13 +1675,16 @@ el('btnBooster').onclick = async () => {
   boostLuck = true;
   toast('🍀 Gate luck boosted for your next run!');
 };
+if (!BILLING_ENABLED) { el('iapBundle').textContent = '🔒 Soon'; el('iapNoAds').textContent = '🔒 Soon'; }
 el('iapBundle').onclick = async () => {
+  sfx('tap');
   if (await purchaseIAP('starter_bundle')) {
     D.coins += 1000; if (D.up.army < UP_DEFS.army.max) D.up.army++;
     persist(); sfx('coin'); toast('🎁 Starter bundle unlocked!'); refreshShop();
   }
 };
 el('iapNoAds').onclick = async () => {
+  sfx('tap');
   if (await purchaseIAP('remove_interstitials')) {
     D.noAds = true; persist(); toast('🚫 Interstitials removed forever!');
   }
